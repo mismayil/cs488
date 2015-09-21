@@ -1,0 +1,11 @@
+Compilation
+===========
+To compile: 
+	premake4 gmake
+	make
+To run: 
+	./A0
+
+Manual
+======
+Nothing out of specification.
