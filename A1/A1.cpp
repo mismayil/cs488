@@ -18,9 +18,45 @@ static const size_t DIM = 16;
 A1::A1()
 	: current_col( 0 )
 {
-	colour[0] = 0.0f;
-	colour[1] = 0.0f;
-	colour[2] = 0.0f;
+	// black
+	colours[0][0] = 0.0f;
+	colours[0][1] = 0.0f;
+	colours[0][2] = 0.0f;
+
+	// red
+	colours[1][0] = 1.0f;
+	colours[1][1] = 0.0f;
+	colours[1][2] = 0.0f;
+
+	// green
+	colours[2][0] = 0.0f;
+	colours[2][1] = 1.0f;
+	colours[2][2] = 0.0f;
+
+	// blue
+	colours[3][0] = 0.0f;
+	colours[3][1] = 0.0f;
+	colours[3][2] = 1.0f;
+
+	// yellow
+	colours[4][0] = 1.0f;
+	colours[4][1] = 1.0f;
+	colours[4][2] = 0.0f;
+
+	// 
+	colours[5][0] = 1.0f;
+	colours[5][1] = 0.0f;
+	colours[5][2] = 1.0f;
+
+	// 
+	colours[6][0] = 0.0f;
+	colours[6][1] = 1.0f;
+	colours[6][2] = 1.0f;
+
+	// white
+	colours[7][0] = 1.0f;
+	colours[7][1] = 1.0f;
+	colours[7][2] = 1.0f;
 }
 
 //----------------------------------------------------------------------------------------
@@ -162,18 +198,77 @@ void A1::guiLogic()
 
 		// Prefixing a widget name with "##" keeps it from being
 		// displayed.
-
+		ImGui::SameLine();
 		if (ImGui::Button("Reset")) {
 			reset();
 		}
+
 		ImGui::PushID( 0 );
-		ImGui::ColorEdit3( "##Colour", colour );
+		ImGui::ColorEdit3( "##Colour", colours[0]);
 		ImGui::SameLine();
+
+		int old_col = current_col;
+		
 		if( ImGui::RadioButton( "##Col", &current_col, 0 ) ) {
-			// Select this colour.
+			
 		}
 		ImGui::PopID();
 
+		ImGui::PushID( 1 );
+		ImGui::ColorEdit3( "##Colour", colours[1]);
+		ImGui::SameLine();
+		if( ImGui::RadioButton( "##Col", &current_col, 1 ) ) {
+			
+		}
+		ImGui::PopID();
+
+		ImGui::PushID( 2 );
+		ImGui::ColorEdit3( "##Colour", colours[2]);
+		ImGui::SameLine();
+		if( ImGui::RadioButton( "##Col", &current_col, 2 ) ) {
+			
+		}
+		ImGui::PopID();
+
+		ImGui::PushID( 3 );
+		ImGui::ColorEdit3( "##Colour", colours[3]);
+		ImGui::SameLine();
+		if( ImGui::RadioButton( "##Col", &current_col, 3 ) ) {
+			
+		}
+		ImGui::PopID();		
+
+		ImGui::PushID( 4 );
+		ImGui::ColorEdit3( "##Colour", colours[4]);
+		ImGui::SameLine();
+		if( ImGui::RadioButton( "##Col", &current_col, 4 ) ) {
+			
+		}
+		ImGui::PopID();
+
+		ImGui::PushID( 5 );
+		ImGui::ColorEdit3( "##Colour", colours[5]);
+		ImGui::SameLine();
+		if( ImGui::RadioButton( "##Col", &current_col, 5 ) ) {
+			
+		}
+		ImGui::PopID();
+
+		ImGui::PushID( 6 );
+		ImGui::ColorEdit3( "##Colour", colours[6]);
+		ImGui::SameLine();
+		if( ImGui::RadioButton( "##Col", &current_col, 6 ) ) {
+			
+		}
+		ImGui::PopID();
+
+		ImGui::PushID( 7 );
+		ImGui::ColorEdit3( "##Colour", colours[7]);
+		ImGui::SameLine();
+		if( ImGui::RadioButton( "##Col", &current_col, 7 ) ) {
+			
+		}
+		ImGui::PopID();
 /*
 		// For convenience, you can uncomment this to show ImGui's massive
 		// demonstration window right in your application.  Very handy for
@@ -193,7 +288,7 @@ void A1::guiLogic()
 	}
 }
 
-void A1::drawCube(float dx, float dy, float dz) {
+void A1::drawCube(float dx, float dy, float dz, int colour) {
 	int CUBE_SIZE = 24;
 
 	float *cube_verts = new float[CUBE_SIZE];
@@ -225,7 +320,7 @@ void A1::drawCube(float dx, float dy, float dz) {
 	};
 
 	glGenVertexArrays(1, &m_cube_vao);
-	glUniform3f(col_uni, 1, 1, 0);
+	glUniform3f(col_uni, colours[colour][0], colours[colour][1], colours[colour][2]);
 	glBindVertexArray(m_cube_vao);
 
 	glGenBuffers(1, &m_cube_vbo);
@@ -259,7 +354,7 @@ void A1::drawRomb(float dx, float dy, float dz) {
 	};
 
 	glGenVertexArrays(1, &m_cube_vao);
-	glUniform3f(col_uni, 0, 0, 1);
+	glUniform3f(col_uni, 0.3, 0.3, 0.3);
 	glBindVertexArray(m_cube_vao);
 
 	glGenBuffers(1, &m_cube_vbo);
@@ -303,7 +398,7 @@ void A1::draw()
 		for (int i = 0; i < grid->getDim(); i++) {
 			for (int k = 0; k < grid->getDim(); k++) {
 				for (int h = 0; h < grid->getHeight(i, k); h++) {
-					drawCube(i, h, k);
+					drawCube(i, h, k, grid->getColour(i, k));
 				}
 			}
 		}
@@ -414,7 +509,12 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 		}
 
 		if (key == GLFW_KEY_RIGHT) {
+
 			if (active_cell.x + 1 < DIM) {
+				if (mods == GLFW_MOD_SHIFT) {
+					grid->setHeight(active_cell.x + 1, active_cell.z, grid->getHeight(active_cell.x, active_cell.z));
+					grid->setColour(active_cell.x + 1, active_cell.z, grid->getColour(active_cell.x, active_cell.z));
+				}
 				active_cell.x += 1;
 				active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
 			}
@@ -422,6 +522,10 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 
 		if (key == GLFW_KEY_LEFT) {
 			if (active_cell.x - 1 >= 0) {
+				if (mods == GLFW_MOD_SHIFT) {
+					grid->setHeight(active_cell.x - 1, active_cell.z, grid->getHeight(active_cell.x, active_cell.z));
+					grid->setColour(active_cell.x - 1, active_cell.z, grid->getColour(active_cell.x, active_cell.z));
+				}
 				active_cell.x -= 1;
 				active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
 			}
@@ -429,6 +533,10 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 
 		if (key == GLFW_KEY_UP) {
 			if (active_cell.z - 1 >= 0) {
+				if (mods == GLFW_MOD_SHIFT) {
+					grid->setHeight(active_cell.x, active_cell.z - 1, grid->getHeight(active_cell.x, active_cell.z));
+					grid->setColour(active_cell.x, active_cell.z - 1, grid->getColour(active_cell.x, active_cell.z));
+				}
 				active_cell.z -= 1;
 				active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
 			}
@@ -436,6 +544,10 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 
 		if (key == GLFW_KEY_DOWN) {
 			if (active_cell.z + 1 < DIM) {
+				if (mods == GLFW_MOD_SHIFT) {
+					grid->setHeight(active_cell.x, active_cell.z + 1, grid->getHeight(active_cell.x, active_cell.z));
+					grid->setColour(active_cell.x, active_cell.z + 1, grid->getColour(active_cell.x, active_cell.z));
+				}
 				active_cell.z += 1;
 				active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
 			}
@@ -443,6 +555,7 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 
 		if (key == GLFW_KEY_SPACE) {
 			grid->setHeight(active_cell.x, active_cell.z, grid->getHeight(active_cell.x, active_cell.z) + 1);
+			grid->setColour(active_cell.x, active_cell.z, current_col);
 			active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
 		}
 

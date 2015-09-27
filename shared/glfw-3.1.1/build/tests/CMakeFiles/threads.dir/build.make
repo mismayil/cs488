@@ -108,6 +108,7 @@ tests/threads: tests/CMakeFiles/threads.dir/__/deps/tinycthread.c.o
 tests/threads: tests/CMakeFiles/threads.dir/build.make
 tests/threads: src/libglfw3.a
 tests/threads: /usr/lib/x86_64-linux-gnu/libX11.so
+tests/threads: /usr/lib/x86_64-linux-gnu/librt.so
 tests/threads: /usr/lib/x86_64-linux-gnu/libXrandr.so
 tests/threads: /usr/lib/x86_64-linux-gnu/libXinerama.so
 tests/threads: /usr/lib/x86_64-linux-gnu/libXi.so

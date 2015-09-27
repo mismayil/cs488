@@ -108,6 +108,7 @@ tests/empty: tests/CMakeFiles/empty.dir/__/deps/tinycthread.c.o
 tests/empty: tests/CMakeFiles/empty.dir/build.make
 tests/empty: src/libglfw3.a
 tests/empty: /usr/lib/x86_64-linux-gnu/libX11.so
+tests/empty: /usr/lib/x86_64-linux-gnu/librt.so
 tests/empty: /usr/lib/x86_64-linux-gnu/libXrandr.so
 tests/empty: /usr/lib/x86_64-linux-gnu/libXinerama.so
 tests/empty: /usr/lib/x86_64-linux-gnu/libXi.so

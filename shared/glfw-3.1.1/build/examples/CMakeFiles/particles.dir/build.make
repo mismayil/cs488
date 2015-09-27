@@ -134,6 +134,7 @@ examples/particles: examples/CMakeFiles/particles.dir/build.make
 examples/particles: src/libglfw3.a
 examples/particles: /usr/lib/x86_64-linux-gnu/libGLU.so
 examples/particles: /usr/lib/x86_64-linux-gnu/libX11.so
+examples/particles: /usr/lib/x86_64-linux-gnu/librt.so
 examples/particles: /usr/lib/x86_64-linux-gnu/libXrandr.so
 examples/particles: /usr/lib/x86_64-linux-gnu/libXinerama.so
 examples/particles: /usr/lib/x86_64-linux-gnu/libXi.so

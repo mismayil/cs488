@@ -27,7 +27,7 @@ protected:
 	virtual void cleanup() override;
 
 	void reset();
-	void drawCube(float dx, float dy, float dz);
+	void drawCube(float dx, float dy, float dz, int colour);
 	void drawRomb(float dx, float dy, float dz);
 
 	virtual bool cursorEnterWindowEvent(int entered) override;
@@ -62,6 +62,6 @@ private:
 	Grid *grid;
 	point active_cell;
 
-	float colour[3];
+	float colours[8][3];
 	int current_col;
 };
