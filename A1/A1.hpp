@@ -8,6 +8,12 @@
 
 #include "grid.hpp"
 
+struct point {
+	float x;
+	float y;
+	float z;
+};
+
 class A1 : public CS488Window {
 public:
 	A1();
@@ -19,6 +25,10 @@ protected:
 	virtual void guiLogic() override;
 	virtual void draw() override;
 	virtual void cleanup() override;
+
+	void reset();
+	void drawCube(float dx, float dy, float dz);
+	void drawRomb(float dx, float dy, float dz);
 
 	virtual bool cursorEnterWindowEvent(int entered) override;
 	virtual bool mouseMoveEvent(double xPos, double yPos) override;
@@ -41,9 +51,16 @@ private:
 	GLuint m_grid_vao; // Vertex Array Object
 	GLuint m_grid_vbo; // Vertex Buffer Object
 
+	GLuint m_cube_vao; // Vertex Array Object
+	GLuint m_cube_vbo; // Vertex Buffer Obect
+	GLuint m_cube_ebo; // Element Buffer Object
+
 	// Matrices controlling the camera and projection.
 	glm::mat4 proj;
 	glm::mat4 view;
+
+	Grid *grid;
+	point active_cell;
 
 	float colour[3];
 	int current_col;

@@ -51,6 +51,9 @@ void A1::init()
 	M_uni = m_shader.getUniformLocation( "M" );
 	col_uni = m_shader.getUniformLocation( "colour" );
 
+	grid = new Grid(DIM);
+	active_cell = {0, 0, 0};
+
 	initGrid();
 
 	// Set up initial view and projection matrices (need to do this here,
@@ -63,6 +66,10 @@ void A1::init()
 		glm::radians( 45.0f ),
 		float( m_framebufferWidth ) / float( m_framebufferHeight ),
 		1.0f, 1000.0f );
+}
+
+void A1::reset() {
+
 }
 
 void A1::initGrid()
@@ -156,6 +163,9 @@ void A1::guiLogic()
 		// Prefixing a widget name with "##" keeps it from being
 		// displayed.
 
+		if (ImGui::Button("Reset")) {
+			reset();
+		}
 		ImGui::PushID( 0 );
 		ImGui::ColorEdit3( "##Colour", colour );
 		ImGui::SameLine();
@@ -183,6 +193,89 @@ void A1::guiLogic()
 	}
 }
 
+void A1::drawCube(float dx, float dy, float dz) {
+	int CUBE_SIZE = 24;
+
+	float *cube_verts = new float[CUBE_SIZE];
+	int n = 0;
+
+	for (int i = 0; i < 2; i++) {
+		for (int j = 0; j < 2; j++) {
+			for (int k = 0; k < 2; k++) {
+				cube_verts[n++] = i + dx;
+				cube_verts[n++] = j + dy;
+				cube_verts[n++] = k + dz;
+			}
+		}
+	}
+
+	GLuint elements[] = {
+		0, 4, 5,
+		5, 1, 0,
+		2, 6, 7,
+		7, 3, 2,
+		3, 2, 0,
+		0, 1, 3,
+		7, 6, 4,
+		4, 5, 7,
+		2, 6, 4,
+		4, 0, 2,
+		3, 7, 5,
+		5, 1, 3
+	};
+
+	glGenVertexArrays(1, &m_cube_vao);
+	glUniform3f(col_uni, 1, 1, 0);
+	glBindVertexArray(m_cube_vao);
+
+	glGenBuffers(1, &m_cube_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
+	glBufferData(GL_ARRAY_BUFFER, CUBE_SIZE*sizeof(float), cube_verts, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &m_cube_ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_cube_ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+
+	GLint posAttrib = m_shader.getAttribLocation("position");
+    glEnableVertexAttribArray(posAttrib);
+    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+	delete [] cube_verts;
+}
+
+void A1::drawRomb(float dx, float dy, float dz) {
+	glDisable(GL_DEPTH_TEST);
+	float x_verts[] = {
+		0.5f+dx, 0.0f+dy, 0.0f+dz,
+		1.0f+dx, 0.0f+dy, 0.5f+dz,
+		0.5f+dx, 0.0f+dy, 1.0f+dz,
+		0.0f+dx, 0.0f+dy, 0.5f+dz
+	};
+
+	GLuint xelements[] = {
+		0, 1, 2,
+		2, 3, 0
+	};
+
+	glGenVertexArrays(1, &m_cube_vao);
+	glUniform3f(col_uni, 0, 0, 1);
+	glBindVertexArray(m_cube_vao);
+
+	glGenBuffers(1, &m_cube_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, m_cube_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(x_verts), x_verts, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &m_cube_ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_cube_ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(xelements), xelements, GL_STATIC_DRAW);
+
+	GLint posAttrib = m_shader.getAttribLocation("position");
+    glEnableVertexAttribArray(posAttrib);
+    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glEnable(GL_DEPTH_TEST);
+}
 //----------------------------------------------------------------------------------------
 /*
  * Called once per frame, after guiLogic().
@@ -207,6 +300,14 @@ void A1::draw()
 
 		// Draw the cubes
 		// Highlight the active square.
+		for (int i = 0; i < grid->getDim(); i++) {
+			for (int k = 0; k < grid->getDim(); k++) {
+				for (int h = 0; h < grid->getHeight(i, k); h++) {
+					drawCube(i, h, k);
+				}
+			}
+		}
+		drawRomb(active_cell.x, active_cell.y, active_cell.z);
 	m_shader.disable();
 
 	// Restore defaults
@@ -303,7 +404,55 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 
 	// Fill in with event handling code...
 	if( action == GLFW_PRESS ) {
-		// Respond to some key events.
+		if (key == GLFW_KEY_Q) {
+			glfwSetWindowShouldClose(m_window, GL_TRUE);
+			
+		}
+
+		if (key == GLFW_KEY_R) {
+			reset();
+		}
+
+		if (key == GLFW_KEY_RIGHT) {
+			if (active_cell.x + 1 < DIM) {
+				active_cell.x += 1;
+				active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
+			}
+		}
+
+		if (key == GLFW_KEY_LEFT) {
+			if (active_cell.x - 1 >= 0) {
+				active_cell.x -= 1;
+				active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
+			}
+		}
+
+		if (key == GLFW_KEY_UP) {
+			if (active_cell.z - 1 >= 0) {
+				active_cell.z -= 1;
+				active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
+			}
+		}
+
+		if (key == GLFW_KEY_DOWN) {
+			if (active_cell.z + 1 < DIM) {
+				active_cell.z += 1;
+				active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
+			}
+		}
+
+		if (key == GLFW_KEY_SPACE) {
+			grid->setHeight(active_cell.x, active_cell.z, grid->getHeight(active_cell.x, active_cell.z) + 1);
+			active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
+		}
+
+		if (key == GLFW_KEY_BACKSPACE) {
+			int height = grid->getHeight(active_cell.x, active_cell.z);
+			grid->setHeight(active_cell.x, active_cell.z, height > 0 ? height - 1 : 0);
+			active_cell.y = grid->getHeight(active_cell.x, active_cell.z);
+		}
+
+		eventHandled = true;
 	}
 
 	return eventHandled;
