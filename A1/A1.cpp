@@ -11,6 +11,8 @@
 using namespace glm;
 using namespace std;
 
+#define PI 3.14
+
 static const size_t DIM = 16;
 
 //----------------------------------------------------------------------------------------
@@ -206,8 +208,6 @@ void A1::guiLogic()
 		ImGui::PushID( 0 );
 		ImGui::ColorEdit3( "##Colour", colours[0]);
 		ImGui::SameLine();
-
-		int old_col = current_col;
 		
 		if( ImGui::RadioButton( "##Col", &current_col, 0 ) ) {
 			
@@ -218,7 +218,7 @@ void A1::guiLogic()
 		ImGui::ColorEdit3( "##Colour", colours[1]);
 		ImGui::SameLine();
 		if( ImGui::RadioButton( "##Col", &current_col, 1 ) ) {
-			
+			grid->setColour(active_cell.x, active_cell.z, current_col);
 		}
 		ImGui::PopID();
 
@@ -226,7 +226,7 @@ void A1::guiLogic()
 		ImGui::ColorEdit3( "##Colour", colours[2]);
 		ImGui::SameLine();
 		if( ImGui::RadioButton( "##Col", &current_col, 2 ) ) {
-			
+			grid->setColour(active_cell.x, active_cell.z, current_col);
 		}
 		ImGui::PopID();
 
@@ -234,7 +234,7 @@ void A1::guiLogic()
 		ImGui::ColorEdit3( "##Colour", colours[3]);
 		ImGui::SameLine();
 		if( ImGui::RadioButton( "##Col", &current_col, 3 ) ) {
-			
+			grid->setColour(active_cell.x, active_cell.z, current_col);
 		}
 		ImGui::PopID();		
 
@@ -242,7 +242,7 @@ void A1::guiLogic()
 		ImGui::ColorEdit3( "##Colour", colours[4]);
 		ImGui::SameLine();
 		if( ImGui::RadioButton( "##Col", &current_col, 4 ) ) {
-			
+			grid->setColour(active_cell.x, active_cell.z, current_col);
 		}
 		ImGui::PopID();
 
@@ -250,7 +250,7 @@ void A1::guiLogic()
 		ImGui::ColorEdit3( "##Colour", colours[5]);
 		ImGui::SameLine();
 		if( ImGui::RadioButton( "##Col", &current_col, 5 ) ) {
-			
+			grid->setColour(active_cell.x, active_cell.z, current_col);
 		}
 		ImGui::PopID();
 
@@ -258,7 +258,7 @@ void A1::guiLogic()
 		ImGui::ColorEdit3( "##Colour", colours[6]);
 		ImGui::SameLine();
 		if( ImGui::RadioButton( "##Col", &current_col, 6 ) ) {
-			
+			grid->setColour(active_cell.x, active_cell.z, current_col);
 		}
 		ImGui::PopID();
 
@@ -266,7 +266,7 @@ void A1::guiLogic()
 		ImGui::ColorEdit3( "##Colour", colours[7]);
 		ImGui::SameLine();
 		if( ImGui::RadioButton( "##Col", &current_col, 7 ) ) {
-			
+			grid->setColour(active_cell.x, active_cell.z, current_col);
 		}
 		ImGui::PopID();
 /*
@@ -336,6 +336,13 @@ void A1::drawCube(float dx, float dy, float dz, int colour) {
     glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
+	// Cleanup
+	glDeleteBuffers(1, &m_cube_vbo);
+	glDeleteBuffers(1, &m_cube_ebo);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 	delete [] cube_verts;
 }
 
@@ -370,6 +377,13 @@ void A1::drawRomb(float dx, float dy, float dz) {
     glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glEnable(GL_DEPTH_TEST);
+
+    // Cleanup
+	glDeleteBuffers(1, &m_cube_vbo);
+	glDeleteBuffers(1, &m_cube_ebo);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 //----------------------------------------------------------------------------------------
 /*
@@ -378,15 +392,15 @@ void A1::drawRomb(float dx, float dy, float dz) {
 void A1::draw()
 {
 	// Create a global transformation for the model (centre it).
-	mat4 W;
+	mat4 W, V;
 	W = glm::translate( W, vec3( -float(DIM)/2.0f, 0, -float(DIM)/2.0f ) );
-
+	V = glm::rotate(V, (float) (PI/4), vec3(-float(DIM)/2.0f, 0, -float(DIM)/2.0f));
 	m_shader.enable();
 		glEnable( GL_DEPTH_TEST );
 
 		glUniformMatrix4fv( P_uni, 1, GL_FALSE, value_ptr( proj ) );
 		glUniformMatrix4fv( V_uni, 1, GL_FALSE, value_ptr( view ) );
-		glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( W ) );
+		glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( V ) );
 
 		// Just draw the grid for now.
 		glBindVertexArray( m_grid_vao );
@@ -402,6 +416,7 @@ void A1::draw()
 				}
 			}
 		}
+
 		drawRomb(active_cell.x, active_cell.y, active_cell.z);
 	m_shader.disable();
 
