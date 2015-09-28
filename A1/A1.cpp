@@ -13,8 +13,8 @@ using namespace glm;
 using namespace std;
 
 static const size_t DIM = 16;
-static const double SCALE_MIN_LIMIT = 0.2;
-static double SCALE_MAX_LIMIT = 5;
+static const double SCALE_MIN_LIMIT = 0.1;
+static double SCALE_MAX_LIMIT = 10;
 static double SCALE_UP = 1.5f;
 static double SCALE_DOWN = (double) 1 / SCALE_UP;
 static double scales = 1;
@@ -348,8 +348,8 @@ void A1::drawCube(float dx, float dy, float dz, int colour) {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
 	GLint posAttrib = m_shader.getAttribLocation("position");
-        glEnableVertexAttribArray(posAttrib);
-        glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glEnableVertexAttribArray(posAttrib);
+    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
 	// Cleanup
@@ -389,12 +389,12 @@ void A1::drawRomb(float dx, float dy, float dz) {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(xelements), xelements, GL_STATIC_DRAW);
 
 	GLint posAttrib = m_shader.getAttribLocation("position");
-        glEnableVertexAttribArray(posAttrib);
-        glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glEnable(GL_DEPTH_TEST);
+    glEnableVertexAttribArray(posAttrib);
+    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glEnable(GL_DEPTH_TEST);
 
-        // Cleanup
+    // Cleanup
 	glDeleteBuffers(1, &m_cube_vbo);
 	glDeleteBuffers(1, &m_cube_ebo);
 	glBindVertexArray(0);
