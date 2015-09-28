@@ -20,19 +20,19 @@ ifndef AR
 endif
 
 ifeq ($(config),debug)
-  OBJDIR     = Debug/imgui
-  TARGETDIR  = ../lib
-  TARGET     = $(TARGETDIR)/libimgui.a
+  OBJDIR     = Debug
+  TARGETDIR  = ..
+  TARGET     = $(TARGETDIR)/A1
   DEFINES   += -DDEBUG
-  INCLUDES  += -I../shared -I../shared/gl3w -I../shared/imgui -I../shared/include -I../shared/imgui/examples/opengl3_example -I../shared/imgui/examples/libs/gl3w
+  INCLUDES  += -I../../shared -I../../shared/include -I../../shared/gl3w -I../../shared/imgui
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
-  CFLAGS    += $(CPPFLAGS) $(ARCH) -g
+  CFLAGS    += $(CPPFLAGS) $(ARCH) -g -std=c++11
   CXXFLAGS  += $(CFLAGS) 
-  LDFLAGS   += 
-  LIBS      += 
+  LDFLAGS   += -L../../lib
+  LIBS      += -lcs488-framework -limgui -lglfw3 -lGL -lXinerama -lXcursor -lXxf86vm -lXi -lXrandr -lX11 -lstdc++ -ldl -lpthread
   RESFLAGS  += $(DEFINES) $(INCLUDES) 
   LDDEPS    += 
-  LINKCMD    = $(AR) -rcs $(TARGET) $(OBJECTS)
+  LINKCMD    = $(CXX) -o $(TARGET) $(OBJECTS) $(LDFLAGS) $(RESOURCES) $(ARCH) $(LIBS)
   define PREBUILDCMDS
   endef
   define PRELINKCMDS
@@ -42,19 +42,19 @@ ifeq ($(config),debug)
 endif
 
 ifeq ($(config),release)
-  OBJDIR     = Release/imgui
-  TARGETDIR  = ../lib
-  TARGET     = $(TARGETDIR)/libimgui.a
+  OBJDIR     = Release
+  TARGETDIR  = ..
+  TARGET     = $(TARGETDIR)/A1
   DEFINES   += -DNDEBUG
-  INCLUDES  += -I../shared -I../shared/gl3w -I../shared/imgui -I../shared/include -I../shared/imgui/examples/opengl3_example -I../shared/imgui/examples/libs/gl3w
+  INCLUDES  += -I../../shared -I../../shared/include -I../../shared/gl3w -I../../shared/imgui
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
-  CFLAGS    += $(CPPFLAGS) $(ARCH) -O2
+  CFLAGS    += $(CPPFLAGS) $(ARCH) -O2 -std=c++11
   CXXFLAGS  += $(CFLAGS) 
-  LDFLAGS   += -s
-  LIBS      += 
+  LDFLAGS   += -s -L../../lib
+  LIBS      += -lcs488-framework -limgui -lglfw3 -lGL -lXinerama -lXcursor -lXxf86vm -lXi -lXrandr -lX11 -lstdc++ -ldl -lpthread
   RESFLAGS  += $(DEFINES) $(INCLUDES) 
   LDDEPS    += 
-  LINKCMD    = $(AR) -rcs $(TARGET) $(OBJECTS)
+  LINKCMD    = $(CXX) -o $(TARGET) $(OBJECTS) $(LDFLAGS) $(RESOURCES) $(ARCH) $(LIBS)
   define PREBUILDCMDS
   endef
   define PRELINKCMDS
@@ -64,11 +64,9 @@ ifeq ($(config),release)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/imgui.o \
-	$(OBJDIR)/imgui_demo.o \
-	$(OBJDIR)/imgui_draw.o \
-	$(OBJDIR)/imgui_impl_glfw_gl3.o \
-	$(OBJDIR)/gl3w.o \
+	$(OBJDIR)/A1.o \
+	$(OBJDIR)/Main.o \
+	$(OBJDIR)/grid.o \
 
 RESOURCES := \
 
@@ -86,7 +84,7 @@ all: $(TARGETDIR) $(OBJDIR) prebuild prelink $(TARGET)
 	@:
 
 $(TARGET): $(GCH) $(OBJECTS) $(LDDEPS) $(RESOURCES)
-	@echo Linking imgui
+	@echo Linking A1
 	$(SILENT) $(LINKCMD)
 	$(POSTBUILDCMDS)
 
@@ -107,7 +105,7 @@ else
 endif
 
 clean:
-	@echo Cleaning imgui
+	@echo Cleaning A1
 ifeq (posix,$(SHELLTYPE))
 	$(SILENT) rm -f  $(TARGET)
 	$(SILENT) rm -rf $(OBJDIR)
@@ -129,20 +127,14 @@ $(GCH): $(PCH)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 endif
 
-$(OBJDIR)/imgui.o: ../shared/imgui/imgui.cpp
+$(OBJDIR)/A1.o: ../A1.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-$(OBJDIR)/imgui_demo.o: ../shared/imgui/imgui_demo.cpp
+$(OBJDIR)/Main.o: ../Main.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-$(OBJDIR)/imgui_draw.o: ../shared/imgui/imgui_draw.cpp
+$(OBJDIR)/grid.o: ../grid.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-$(OBJDIR)/imgui_impl_glfw_gl3.o: ../shared/imgui/imgui_impl_glfw_gl3.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-$(OBJDIR)/gl3w.o: ../shared/gl3w/GL/gl3w.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(CFLAGS) -o "$@" -c "$<"
 
 -include $(OBJECTS:%.o=%.d)
