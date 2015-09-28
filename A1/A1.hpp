@@ -8,6 +8,7 @@
 
 #include "grid.hpp"
 
+// defines point
 struct point {
 	float x;
 	float y;
@@ -25,10 +26,11 @@ protected:
 	virtual void guiLogic() override;
 	virtual void draw() override;
 	virtual void cleanup() override;
-
-	void reset();
-	void drawCube(float dx, float dy, float dz, int colour);
-	void drawRomb(float dx, float dy, float dz);
+	
+	void init_colours();  // initializes radio button colours
+	void reset();         // resets UI
+	void drawCube(float dx, float dy, float dz, int colour); // draws a cube
+	void drawRomb(float dx, float dy, float dz);             // draws indicator romb
 
 	virtual bool cursorEnterWindowEvent(int entered) override;
 	virtual bool mouseMoveEvent(double xPos, double yPos) override;
@@ -59,14 +61,13 @@ private:
 	glm::mat4 proj;
 	glm::mat4 view;
 
-	glm::mat4 C, T, R, S;
+	glm::mat4 T;  // global transformation matrix
 
-	Grid *grid;
+	Grid *grid; 
 	point active_cell;
-	double theta;
-	point scale;
 	point old_mouse_pos;
-	bool mouse_clicked;
+	bool mouse_left_clicked;
+	bool mouse_right_clicked;
 
 	float colours[8][3];
 	int current_col;

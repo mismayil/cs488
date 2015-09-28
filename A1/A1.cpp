@@ -13,12 +13,13 @@ using namespace glm;
 using namespace std;
 
 static const size_t DIM = 16;
+static const double SCALE_MIN_LIMIT = 0.2;
+static double SCALE_MAX_LIMIT = 5;
+static double SCALE_UP = 1.5f;
+static double SCALE_DOWN = (double) 1 / SCALE_UP;
+static double scales = 1;
 
-//----------------------------------------------------------------------------------------
-// Constructor
-A1::A1()
-	: current_col( 0 )
-{
+void A1::init_colours() {
 	// black
 	colours[0][0] = 0.0f;
 	colours[0][1] = 0.0f;
@@ -57,13 +58,22 @@ A1::A1()
 	// white
 	colours[7][0] = 1.0f;
 	colours[7][1] = 1.0f;
-	colours[7][2] = 1.0f;
+	colours[7][2] = 1.0f;	
+}
+
+//----------------------------------------------------------------------------------------
+// Constructor
+A1::A1()
+	: current_col( 0 )
+{
+	init_colours();
 }
 
 //----------------------------------------------------------------------------------------
 // Destructor
-A1::~A1()
-{}
+A1::~A1(){
+	delete grid;
+}
 
 //----------------------------------------------------------------------------------------
 /*
@@ -90,13 +100,9 @@ void A1::init()
 
 	grid = new Grid(DIM);
 	active_cell = {0, 0, 0};
-	theta = 0;
-        scale = {1, 1, 1};
-	mouse_clicked = false;
+	mouse_left_clicked = false;
+	mouse_right_clicked = false;
 	T = glm::translate(mat4(), vec3( -float(DIM)/2.0f, 0, -float(DIM)/2.0f ) );
-	R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
-	S = glm::scale(mat4(), vec3(scale.x, scale.y, scale.z));
-	C = R * S * T;
 
 	initGrid();
 
@@ -113,7 +119,12 @@ void A1::init()
 }
 
 void A1::reset() {
-
+	T = glm::translate(mat4(), vec3( -float(DIM)/2.0f, 0, -float(DIM)/2.0f ) );
+	grid->reset();
+	active_cell = {0, 0, 0};
+	mouse_left_clicked = false;
+	init_colours();
+	scales = 1;
 }
 
 void A1::initGrid()
@@ -401,7 +412,7 @@ void A1::draw() {
 
 		glUniformMatrix4fv( P_uni, 1, GL_FALSE, value_ptr( proj ) );
 		glUniformMatrix4fv( V_uni, 1, GL_FALSE, value_ptr( view ) );
-		glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( C ) );
+		glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( T ) );
 
 		// Just draw the grid for now.
 		glBindVertexArray( m_grid_vao );
@@ -427,6 +438,7 @@ void A1::draw() {
 	CHECK_GL_ERRORS;
 }
 
+// finds the angle between two vectors from origin
 double findTheta(point center, point p1, point p2) {
     
     if (p1.x - center.x == 0 || p2.x - center.x == 0) return 0;
@@ -466,7 +478,6 @@ bool A1::cursorEnterWindowEvent (
 bool A1::mouseMoveEvent(double xPos, double yPos) 
 {
 	bool eventHandled(false);
-	point cur_mouse_pos;
 
 	if (!ImGui::IsMouseHoveringAnyWindow()) {
 		// Put some code here to handle rotations.  Probably need to
@@ -474,16 +485,17 @@ bool A1::mouseMoveEvent(double xPos, double yPos)
 		// Probably need some instance variables to track the current
 		// rotation amount, and maybe the previous X position (so 
 		// that you can rotate relative to the *change* in X.
-		//cout << xPos << endl << yPos << endl;
-		if (mouse_clicked) {
+		if (mouse_left_clicked || mouse_right_clicked) {
 			int width, height;
 			glfwGetWindowSize(m_window, &width, &height);
 			point center = {(float)width / 2.0f, 0, (float)height / 2.0f};
-			cur_mouse_pos = {(float)xPos, 0, (float)yPos};
-			theta = findTheta(center, old_mouse_pos, cur_mouse_pos);
+			point cur_mouse_pos = {(float)xPos, 0, (float)yPos};
+			double theta = findTheta(center, old_mouse_pos, cur_mouse_pos);
 			old_mouse_pos = cur_mouse_pos;
-			R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
-			C = R * C;
+			glm::mat4 R;
+			if (mouse_left_clicked) R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
+			if (mouse_right_clicked) R = glm::rotate(mat4(), (float) theta, vec3(1, 0, 0));
+			T = R * T;
 		}
 	}
 	eventHandled = true;
@@ -498,16 +510,18 @@ bool A1::mouseButtonInputEvent(int button, int actions, int mods) {
 	bool eventHandled(false);
 
 	if (!ImGui::IsMouseHoveringAnyWindow()) {
-		if (button == GLFW_MOUSE_BUTTON_LEFT && actions == GLFW_PRESS) {
+		if (actions == GLFW_PRESS) {
 			// The user clicked in the window.  If it's the left
 			// mouse button, initiate a rotation.
-			double xpos, zpos;
-			glfwGetCursorPos(m_window, &xpos, &zpos);
-			old_mouse_pos = {(float) xpos, 0, (float) zpos};
-			mouse_clicked = true;
+			double xpos, ypos;
+			glfwGetCursorPos(m_window, &xpos, &ypos);
+			old_mouse_pos = {(float) xpos, 0, (float) ypos};
+			if (button == GLFW_MOUSE_BUTTON_LEFT) mouse_left_clicked = true;
+			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouse_right_clicked = true;
 		}
 		if (actions == GLFW_RELEASE) {
-			mouse_clicked = false;
+			mouse_left_clicked = false;
+			mouse_right_clicked = false;
 		}
 	}
 	eventHandled = true;
@@ -520,9 +534,17 @@ bool A1::mouseButtonInputEvent(int button, int actions, int mods) {
  */
 bool A1::mouseScrollEvent(double xOffSet, double yOffSet) {
 	bool eventHandled(false);
+	glm::mat4 S;
+	if (yOffSet == 1 && (scales * SCALE_UP < SCALE_MAX_LIMIT)) {
+		scales *= SCALE_UP;
+		S = glm::scale(mat4(), vec3(SCALE_UP));
+	}
 
-	// Zoom in or out.
-
+	if (yOffSet == -1 && (scales * SCALE_DOWN > SCALE_MIN_LIMIT)) {
+		scales *= SCALE_DOWN;
+		S = glm::scale(mat4(), vec3(SCALE_DOWN));
+	}
+	T = S * T;
 	return eventHandled;
 }
 
