@@ -16,23 +16,35 @@ using namespace glm;
 #define PI 3.1415926535
 
 // modes
-#define ROTATE_VIEW 	0
-#define TRANSLATE_VIEW 	1
-#define PERSPECTIVE 	2
-#define ROTATE_MODEL	3
-#define TRANSLATE_MODEL 4
-#define SCALE_MODEL		5
-#define VIEWPORT		6
+enum modes {
+	ROTATE_VIEW,
+	TRANSLATE_VIEW,
+	PERSPECTIVE,
+	ROTATE_MODEL,
+	TRANSLATE_MODEL,
+	SCALE_MODEL,
+	VIEWPORT
+};
+
+// #define ROTATE_VIEW 	0
+// #define TRANSLATE_VIEW 	1
+// #define PERSPECTIVE 	2
+// #define ROTATE_MODEL	3
+// #define TRANSLATE_MODEL 4
+// #define SCALE_MODEL		5
+// #define VIEWPORT		6
+
+#define SCALE_MIN_LIMIT = 0.1;
+#define SCALE_MAX_LIMIT = 10;
+#define SCALE_UP = 1.005f;
+#define SCALE_DOWN = (double) 1 / SCALE_UP;
+// #define FACTOR =
 
 point prevMousePos;
 bool mouseLeftClicked = false;
 bool mouseMiddleClicked = false;
 bool mouseRightClicked = false;
 
-static const double SCALE_MIN_LIMIT = 0.1;
-static const double SCALE_MAX_LIMIT = 10;
-static const double SCALE_UP = 1.1f;
-static const double SCALE_DOWN = (double) 1 / SCALE_UP;
 static double scales = 1;
 
 //----------------------------------------------------------------------------------------
@@ -87,35 +99,34 @@ void A2::init()
 	mode = 0;
 	FAR_PLANE = -1;
 	NEAR_PLANE = 1;
-
-	float angle = PI / 4;
 	ASPECT = m_windowHeight / m_windowWidth;
-	float a[16];
 
-	a[0] = (1.0f / tan(angle / 2)) / ASPECT;
-	a[1] = 0;
-	a[2] = 0;
-	a[3] = 0;
-	a[4] = 0;
-	a[5] = 1.0f / tan(angle / 2);
-	a[6] = 0;
-	a[7] = 0;
-	a[8] = 0;
-	a[9] = 0;
-	a[10] = -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
-	a[11] = -1;
-	a[12] = 0;
-	a[13] = 0;
-	a[14] = (-2 * FAR_PLANE * NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
-	a[15] = 0;
+	float fov = PI / 4;
+	float p[16];
+
+	p[0] = (1.0f / tan(fov / 2)) / ASPECT;
+	p[1] = 0;
+	p[2] = 0;
+	p[3] = 0;
+	p[4] = 0;
+	p[5] = 1.0f / tan(fov / 2);
+	p[6] = 0;
+	p[7] = 0;
+	p[8] = 0;
+	p[9] = 0;
+	p[10] = -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
+	p[11] = -1;
+	p[12] = 0;
+	p[13] = 0;
+	p[14] = (-2 * FAR_PLANE * NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
+	p[15] = 0;
 
 	MODEL = glm::mat4();
-	//MODEL = glm::rotate(mat4(), (float) PI/8, vec3(0.0f, 1.0f, 0.0f)) * MODEL;
 	VIEW = glm::lookAt(
 		glm::vec3(0.0f, 0.0f, 10.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f));
-	PROJ = glm::make_mat4(a);
+	PROJ = glm::make_mat4(p);
 }
 
 void A2::reset() {}
@@ -309,19 +320,6 @@ void A2::drawWorldCoord() {
 	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(zaxis.x / zaxis.w, zaxis.y / zaxis.w));
 }
 
-// find the angle between two vectors from origin
-double findTheta(point center, point p1, point p2) {
-
-    // if (p1.x - center.x == 0 || p2.x - center.x == 0) return 0;
-	//
-    // double s1 = (p1.y - center.y) / (p1.x - center.x);
-    // double s2 = (p2.y - center.y) / (p2.x - center.x);
-	//
-    // double theta = atan((s2-s1)/(1+s2*s1));
-	double theta = (p2.x - p1.x) * PI / 180;
-    return -theta;
-}
-
 /*----------------------------------------------------------------------------------------
 *
 * Called once per frame, before guiLogic().
@@ -510,7 +508,7 @@ bool A2::mouseMoveEvent (
 			glfwGetWindowSize(m_window, &width, &height);
 			point center = {(float)width / 2.0f, (float)height / 2.0f, 0.0f};
 			point curMousePos = {(float)xPos, (float)yPos, 0.0f};
-			double theta = findTheta(center, prevMousePos, curMousePos);
+			double theta = -(curMousePos.x - prevMousePos.x) * PI / m_windowWidth;
 			glm::mat4 R, T, S;
 
 			if (mouseLeftClicked) {
@@ -520,7 +518,7 @@ bool A2::mouseMoveEvent (
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
 						break;
 					case TRANSLATE_MODEL:
-						T = glm::translate(mat4(), vec3((curMousePos.x - prevMousePos.x) / width, 0, 0));
+						T = glm::translate(mat4(), vec3((curMousePos.x - prevMousePos.x) * FACTOR, 0, 0));
 						MODEL = T * MODEL;
 						break;
 					case SCALE_MODEL:
@@ -530,7 +528,7 @@ bool A2::mouseMoveEvent (
 						break;
 					default:break;
 				}
-			}
+			} else
 
 			if (mouseMiddleClicked) {
 				switch (mode) {
@@ -539,7 +537,7 @@ bool A2::mouseMoveEvent (
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
 						break;
 					case TRANSLATE_MODEL:
-						T = glm::translate(mat4(), vec3(0, (curMousePos.x - prevMousePos.x) / width, 0));
+						T = glm::translate(mat4(), vec3(0, (curMousePos.x - prevMousePos.x) * FACTOR, 0));
 						MODEL = T * MODEL;
 						break;
 					case SCALE_MODEL:
@@ -549,7 +547,7 @@ bool A2::mouseMoveEvent (
 						break;
 					default:break;
 				}
-			}
+			} else
 
 			if (mouseRightClicked) {
 				switch (mode) {
@@ -558,7 +556,7 @@ bool A2::mouseMoveEvent (
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
 						break;
 					case TRANSLATE_MODEL:
-						T = glm::translate(mat4(), vec3(0, 0, (curMousePos.x - prevMousePos.x) / width));
+						T = glm::translate(mat4(), vec3(0, 0, (curMousePos.x - prevMousePos.x) * FACTOR));
 						MODEL = T * MODEL;
 						break;
 					case SCALE_MODEL:
