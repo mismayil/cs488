@@ -59,10 +59,12 @@ protected:
 			const glm::vec2 & v0,
 			const glm::vec2 & v1
 	);
-	void drawCube(float dx, float dy, float dz);
-	void drawModelCoord(float dx, float dy, float dz);
-	void drawWorldCoord(float dx, float dy, float dz);
-	
+
+	void reset();
+	void drawCube();
+	void drawModelCoord();
+	void drawWorldCoord();
+
 	ShaderProgram m_shader;
 
 	GLuint m_vao;            // Vertex Array Object
@@ -72,6 +74,7 @@ protected:
 	VertexData m_vertexData;
 
 	glm::vec3 m_currentLineColour;
+	int mode;
 
 	glm::mat4 PROJ;
 	glm::mat4 VIEW;
@@ -81,4 +84,10 @@ protected:
 	float NEAR_PLANE;
 	float FAR_PLANE;
 
+};
+
+struct point {
+	float x;
+	float y;
+	float z;
 };

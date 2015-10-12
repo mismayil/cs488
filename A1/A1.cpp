@@ -45,12 +45,12 @@ void A1::init_colours() {
 	colours[4][1] = 1.0f;
 	colours[4][2] = 0.0f;
 
-	// 
+	//
 	colours[5][0] = 1.0f;
 	colours[5][1] = 0.0f;
 	colours[5][2] = 1.0f;
 
-	// 
+	//
 	colours[6][0] = 0.0f;
 	colours[6][1] = 1.0f;
 	colours[6][2] = 1.0f;
@@ -58,7 +58,7 @@ void A1::init_colours() {
 	// white
 	colours[7][0] = 1.0f;
 	colours[7][1] = 1.0f;
-	colours[7][2] = 1.0f;	
+	colours[7][2] = 1.0f;
 }
 
 //----------------------------------------------------------------------------------------
@@ -108,11 +108,11 @@ void A1::init()
 
 	// Set up initial view and projection matrices (need to do this here,
 	// since it depends on the GLFW window being set up correctly).
-	view = glm::lookAt( 
+	view = glm::lookAt(
 		glm::vec3( 0.0f, float(DIM)*2.0*M_SQRT1_2, float(DIM)*2.0*M_SQRT1_2 ),
 		glm::vec3( 0.0f, 0.0f, 0.0f ),
 		glm::vec3( 0.0f, 1.0f, 0.0f ) );
-	proj = glm::perspective( 
+	proj = glm::perspective(
 		glm::radians( 45.0f ),
 		float( m_framebufferWidth ) / float( m_framebufferHeight ),
 		1.0f, 1000.0f );
@@ -166,7 +166,7 @@ void A1::initGrid()
 	glEnableVertexAttribArray( posAttrib );
 	glVertexAttribPointer( posAttrib, 3, GL_FLOAT, GL_FALSE, 0, nullptr );
 
-	// Reset state to prevent rogue code from messing with *my* 
+	// Reset state to prevent rogue code from messing with *my*
 	// stuff!
 	glBindVertexArray( 0 );
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
@@ -193,7 +193,7 @@ void A1::appLogic()
  */
 void A1::guiLogic()
 {
-	// We already know there's only going to be one window, so for 
+	// We already know there's only going to be one window, so for
 	// simplicity we'll store button states in static local variables.
 	// If there was ever a possibility of having multiple instances of
 	// A1 running simultaneously, this would break; you'd want to make
@@ -252,7 +252,7 @@ void A1::guiLogic()
 		if( ImGui::RadioButton( "##Col", &current_col, 3 ) ) {
 			grid->setColour(active_cell.x, active_cell.z, current_col);
 		}
-		ImGui::PopID();		
+		ImGui::PopID();
 
 		ImGui::PushID( 4 );
 		ImGui::ColorEdit3( "##Colour", colours[4]);
@@ -288,7 +288,7 @@ void A1::guiLogic()
 /*
 		// For convenience, you can uncomment this to show ImGui's massive
 		// demonstration window right in your application.  Very handy for
-		// browsing around to get the widget you want.  Then look in 
+		// browsing around to get the widget you want.  Then look in
 		// shared/imgui/imgui_demo.cpp to see how it's done.
 		if( ImGui::Button( "Test Window" ) ) {
 			showTestWindow = !showTestWindow;
@@ -440,7 +440,7 @@ void A1::draw() {
 
 // finds the angle between two vectors from origin
 double findTheta(point center, point p1, point p2) {
-    
+
     if (p1.x - center.x == 0 || p2.x - center.x == 0) return 0;
 
     double s1 = (p1.z - center.z) / (p1.x - center.x);
@@ -475,7 +475,7 @@ bool A1::cursorEnterWindowEvent (
 /*
  * Event handler.  Handles mouse cursor movement events.
  */
-bool A1::mouseMoveEvent(double xPos, double yPos) 
+bool A1::mouseMoveEvent(double xPos, double yPos)
 {
 	bool eventHandled(false);
 
@@ -483,7 +483,7 @@ bool A1::mouseMoveEvent(double xPos, double yPos)
 		// Put some code here to handle rotations.  Probably need to
 		// check whether we're *dragging*, not just moving the mouse.
 		// Probably need some instance variables to track the current
-		// rotation amount, and maybe the previous X position (so 
+		// rotation amount, and maybe the previous X position (so
 		// that you can rotate relative to the *change* in X.
 		if (mouse_left_clicked || mouse_right_clicked) {
 			int width, height;
@@ -493,7 +493,11 @@ bool A1::mouseMoveEvent(double xPos, double yPos)
 			double theta = findTheta(center, old_mouse_pos, cur_mouse_pos);
 			old_mouse_pos = cur_mouse_pos;
 			glm::mat4 R;
-			if (mouse_left_clicked) R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
+			if (mouse_left_clicked) {
+				R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
+				R = glm::rotate(mat4(), (float) theta, vec3(1, 0, 0)) * R;
+				R = glm::rotate(mat4(), (float) theta, vec3(0, 0, 1)) * R;
+			}
 			if (mouse_right_clicked) R = glm::rotate(mat4(), (float) theta, vec3(1, 0, 0));
 			T = R * T;
 		}
@@ -571,7 +575,7 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 	if( action == GLFW_PRESS ) {
 		if (key == GLFW_KEY_Q) {
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
-			
+
 		}
 
 		if (key == GLFW_KEY_R) {

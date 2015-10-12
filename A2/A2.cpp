@@ -13,7 +13,27 @@ using namespace std;
 
 using namespace glm;
 
-#define PI 3.14
+#define PI 3.1415926535
+
+// modes
+#define ROTATE_VIEW 	0
+#define TRANSLATE_VIEW 	1
+#define PERSPECTIVE 	2
+#define ROTATE_MODEL	3
+#define TRANSLATE_MODEL 4
+#define SCALE_MODEL		5
+#define VIEWPORT		6
+
+point prevMousePos;
+bool mouseLeftClicked = false;
+bool mouseMiddleClicked = false;
+bool mouseRightClicked = false;
+
+static const double SCALE_MIN_LIMIT = 0.1;
+static const double SCALE_MAX_LIMIT = 10;
+static const double SCALE_UP = 1.1f;
+static const double SCALE_DOWN = (double) 1 / SCALE_UP;
+static double scales = 1;
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -48,7 +68,7 @@ A2::~A2()
 void A2::init()
 {
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	//glEnable(GL_LINE_SMOOTH);
+	glEnable(GL_LINE_SMOOTH);
 
 
 	// Set the background colour.
@@ -63,6 +83,10 @@ void A2::init()
 	generateVertexBuffers();
 
 	mapVboDataToVertexAttributeLocation();
+
+	mode = 0;
+	FAR_PLANE = -1;
+	NEAR_PLANE = 1;
 
 	float angle = PI / 4;
 	ASPECT = m_windowHeight / m_windowWidth;
@@ -86,13 +110,15 @@ void A2::init()
 	a[15] = 0;
 
 	MODEL = glm::mat4();
-	MODEL = glm::rotate(mat4(), (float) PI/8, vec3(0.0f, 1.0f, 0.0f)) * MODEL;
+	//MODEL = glm::rotate(mat4(), (float) PI/8, vec3(0.0f, 1.0f, 0.0f)) * MODEL;
 	VIEW = glm::lookAt(
-		glm::vec3(4.0f, 0.0f, 10.0f),
+		glm::vec3(0.0f, 0.0f, 10.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(3.0f, 1.0f, 0.0f));
-	PROJ = make_mat4(a);
+		glm::vec3(0.0f, 1.0f, 0.0f));
+	PROJ = glm::make_mat4(a);
 }
+
+void A2::reset() {}
 
 //----------------------------------------------------------------------------------------
 void A2::createShaderProgram()
@@ -215,14 +241,14 @@ void A2::drawLine(
 	m_vertexData.numVertices += 2;
 }
 
-void A2::drawCube(float dx, float dy, float dz) {
-	glm::vec4 cube_verts[8];
-	int n = 0;
+void A2::drawCube() {
+	glm::vec4 cube[8];
 
+	int n = 0;
 	for (int i = -1; i < 2; i += 2) {
 		for (int j = -1; j < 2; j += 2) {
 			for (int k = -1; k < 2; k += 2) {
-				cube_verts[n++] = vec4(i+dx, j+dy, k+dz, 1);
+				cube[n++] = vec4(i, j, k, 1);
 			}
 		}
 	}
@@ -230,24 +256,25 @@ void A2::drawCube(float dx, float dy, float dz) {
 	setLineColour(vec3(1.0f, 1.0f, 1.0f));
 
 	for (int i = 0; i < 8; i++) {
-		cube_verts[i] = PROJ * VIEW * MODEL * cube_verts[i];
+		cube[i] = PROJ * VIEW * MODEL * cube[i];
 	}
 
-	drawLine(vec2(cube_verts[0].x / cube_verts[0].w, cube_verts[0].y / cube_verts[0].w), vec2(cube_verts[4].x / cube_verts[4].w, cube_verts[4].y / cube_verts[4].w));
-	drawLine(vec2(cube_verts[4].x / cube_verts[4].w, cube_verts[4].y / cube_verts[4].w), vec2(cube_verts[5].x / cube_verts[5].w, cube_verts[5].y / cube_verts[5].w));
-	drawLine(vec2(cube_verts[5].x / cube_verts[5].w, cube_verts[5].y / cube_verts[5].w), vec2(cube_verts[1].x / cube_verts[1].w, cube_verts[1].y / cube_verts[1].w));
-	drawLine(vec2(cube_verts[1].x / cube_verts[1].w, cube_verts[1].y / cube_verts[1].w), vec2(cube_verts[0].x / cube_verts[0].w, cube_verts[0].y / cube_verts[0].w));
-	drawLine(vec2(cube_verts[2].x / cube_verts[2].w, cube_verts[2].y / cube_verts[2].w), vec2(cube_verts[6].x / cube_verts[6].w, cube_verts[6].y / cube_verts[6].w));
-	drawLine(vec2(cube_verts[6].x / cube_verts[6].w, cube_verts[6].y / cube_verts[6].w), vec2(cube_verts[7].x / cube_verts[7].w, cube_verts[7].y / cube_verts[7].w));
-	drawLine(vec2(cube_verts[7].x / cube_verts[7].w, cube_verts[7].y / cube_verts[7].w), vec2(cube_verts[3].x / cube_verts[3].w, cube_verts[3].y / cube_verts[3].w));
-	drawLine(vec2(cube_verts[3].x / cube_verts[3].w, cube_verts[3].y / cube_verts[3].w), vec2(cube_verts[2].x / cube_verts[2].w, cube_verts[2].y / cube_verts[2].w));
-	drawLine(vec2(cube_verts[1].x / cube_verts[1].w, cube_verts[1].y / cube_verts[1].w), vec2(cube_verts[3].x / cube_verts[3].w, cube_verts[3].y / cube_verts[3].w));
-	drawLine(vec2(cube_verts[0].x / cube_verts[0].w, cube_verts[0].y / cube_verts[0].w), vec2(cube_verts[2].x / cube_verts[2].w, cube_verts[2].y / cube_verts[2].w));
-	drawLine(vec2(cube_verts[4].x / cube_verts[4].w, cube_verts[4].y / cube_verts[4].w), vec2(cube_verts[6].x / cube_verts[6].w, cube_verts[6].y / cube_verts[6].w));
-	drawLine(vec2(cube_verts[5].x / cube_verts[5].w, cube_verts[5].y / cube_verts[5].w), vec2(cube_verts[7].x / cube_verts[7].w, cube_verts[7].y / cube_verts[7].w));
+	drawLine(vec2(cube[0].x / cube[0].w, cube[0].y / cube[0].w), vec2(cube[4].x / cube[4].w, cube[4].y / cube[4].w));
+	drawLine(vec2(cube[4].x / cube[4].w, cube[4].y / cube[4].w), vec2(cube[5].x / cube[5].w, cube[5].y / cube[5].w));
+	drawLine(vec2(cube[5].x / cube[5].w, cube[5].y / cube[5].w), vec2(cube[1].x / cube[1].w, cube[1].y / cube[1].w));
+	drawLine(vec2(cube[1].x / cube[1].w, cube[1].y / cube[1].w), vec2(cube[0].x / cube[0].w, cube[0].y / cube[0].w));
+	drawLine(vec2(cube[2].x / cube[2].w, cube[2].y / cube[2].w), vec2(cube[6].x / cube[6].w, cube[6].y / cube[6].w));
+	drawLine(vec2(cube[6].x / cube[6].w, cube[6].y / cube[6].w), vec2(cube[7].x / cube[7].w, cube[7].y / cube[7].w));
+	drawLine(vec2(cube[7].x / cube[7].w, cube[7].y / cube[7].w), vec2(cube[3].x / cube[3].w, cube[3].y / cube[3].w));
+	drawLine(vec2(cube[3].x / cube[3].w, cube[3].y / cube[3].w), vec2(cube[2].x / cube[2].w, cube[2].y / cube[2].w));
+	drawLine(vec2(cube[1].x / cube[1].w, cube[1].y / cube[1].w), vec2(cube[3].x / cube[3].w, cube[3].y / cube[3].w));
+	drawLine(vec2(cube[0].x / cube[0].w, cube[0].y / cube[0].w), vec2(cube[2].x / cube[2].w, cube[2].y / cube[2].w));
+	drawLine(vec2(cube[4].x / cube[4].w, cube[4].y / cube[4].w), vec2(cube[6].x / cube[6].w, cube[6].y / cube[6].w));
+	drawLine(vec2(cube[5].x / cube[5].w, cube[5].y / cube[5].w), vec2(cube[7].x / cube[7].w, cube[7].y / cube[7].w));
 }
 
-void A2::drawModelCoord(float dx, float dy, float dz) {
+// draw model coordinate system
+void A2::drawModelCoord() {
 	glm::vec4 xaxis = vec4(0.5f, 0.0f, 0.0f, 1);
 	glm::vec4 yaxis = vec4(0.0f, 0.5f, 0.0f, 1);
 	glm::vec4 zaxis = vec4(0.0f, 0.0f, 0.5f, 1);
@@ -264,7 +291,8 @@ void A2::drawModelCoord(float dx, float dy, float dz) {
 	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(zaxis.x / zaxis.w, zaxis.y / zaxis.w));
 }
 
-void A2::drawWorldCoord(float dx, float dy, float dz) {
+// draw world coordinate system
+void A2::drawWorldCoord() {
 	glm::vec4 xaxis = vec4(2.0f, 0.0f, 0.0f, 1);
 	glm::vec4 yaxis = vec4(0.0f, 2.0f, 0.0f, 1);
 	glm::vec4 zaxis = vec4(0.0f, 0.0f, 2.0f, 1);
@@ -280,6 +308,20 @@ void A2::drawWorldCoord(float dx, float dy, float dz) {
 	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(yaxis.x / yaxis.w, yaxis.y / yaxis.w));
 	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(zaxis.x / zaxis.w, zaxis.y / zaxis.w));
 }
+
+// find the angle between two vectors from origin
+double findTheta(point center, point p1, point p2) {
+
+    // if (p1.x - center.x == 0 || p2.x - center.x == 0) return 0;
+	//
+    // double s1 = (p1.y - center.y) / (p1.x - center.x);
+    // double s2 = (p2.y - center.y) / (p2.x - center.x);
+	//
+    // double theta = atan((s2-s1)/(1+s2*s1));
+	double theta = (p2.x - p1.x) * PI / 180;
+    return -theta;
+}
+
 /*----------------------------------------------------------------------------------------
 *
 * Called once per frame, before guiLogic().
@@ -289,23 +331,9 @@ void A2::appLogic() {
 
 	// Call at the beginning of frame, before drawing lines:
 	initLineData();
-	drawCube(0, 0, 0);
-	drawModelCoord(0, 0, 0);
-	drawWorldCoord(0, 0, 0);
-	// // Draw outer square:
-	// setLineColour(vec3(1.0f, 0.7f, 0.8f));
-	// drawLine(vec2(-0.5f, -0.5f), vec2(0.5f, -0.5f));
-	// drawLine(vec2(0.5f, -0.5f), vec2(0.5f, 0.5f));
-	// drawLine(vec2(0.5f, 0.5f), vec2(-0.5f, 0.5f));
-	// drawLine(vec2(-0.5f, 0.5f), vec2(-0.5f, -0.5f));
-
-
-	// // Draw inner square:
-	// setLineColour(vec3(0.2f, 1.0f, 1.0f));
-	// drawLine(vec2(-0.25f, -0.25f), vec2(0.25f, -0.25f));
-	// drawLine(vec2(0.25f, -0.25f), vec2(0.25f, 0.25f));
-	// drawLine(vec2(0.25f, 0.25f), vec2(-0.25f, 0.25f));
-	// drawLine(vec2(-0.25f, 0.25f), vec2(-0.25f, -0.25f));
+	drawCube();
+	drawModelCoord();
+	drawWorldCoord();
 }
 
 //----------------------------------------------------------------------------------------
@@ -327,9 +355,66 @@ void A2::guiLogic()
 	ImGui::Begin("Properties", &showDebugWindow, ImVec2(100,100), opacity,
 			windowFlags);
 
+		ImGui::PushID(0);
+		if (ImGui::RadioButton("##RotateView", &mode, 0)) {
 
-		// Add more gui elements here here ...
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+		ImGui::Text("Rotate View");
 
+		ImGui::PushID(1);
+		if (ImGui::RadioButton("##TranslateView", &mode, 1)) {
+
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+		ImGui::Text("Translate View");
+
+		ImGui::PushID(2);
+		if (ImGui::RadioButton("##Perspective", &mode, 2)) {
+
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+		ImGui::Text("Perspective");
+
+		ImGui::PushID(3);
+		if (ImGui::RadioButton("##RotateModel", &mode, 3)) {
+
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+		ImGui::Text("Rotate Model");
+
+		ImGui::PushID(4);
+		if (ImGui::RadioButton("##TranslateModel", &mode, 4)) {
+
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+		ImGui::Text("Translate Model");
+
+		ImGui::PushID(5);
+		if (ImGui::RadioButton("##ScaleModel", &mode, 5)) {
+
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+		ImGui::Text("Scale Model");
+
+		ImGui::PushID(6);
+		if (ImGui::RadioButton("##Viewport", &mode, 6)) {
+
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+		ImGui::Text("Viewport");
+
+		if (ImGui::Button("Reset")) {
+			reset();
+		}
+		ImGui::SameLine();
 
 		// Create Button, and check if it was clicked:
 		if( ImGui::Button( "Quit Application" ) ) {
@@ -418,7 +503,78 @@ bool A2::mouseMoveEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (!ImGui::IsMouseHoveringAnyWindow()) {
+
+		if (mouseLeftClicked || mouseMiddleClicked || mouseRightClicked) {
+			int width, height;
+			glfwGetWindowSize(m_window, &width, &height);
+			point center = {(float)width / 2.0f, (float)height / 2.0f, 0.0f};
+			point curMousePos = {(float)xPos, (float)yPos, 0.0f};
+			double theta = findTheta(center, prevMousePos, curMousePos);
+			glm::mat4 R, T, S;
+
+			if (mouseLeftClicked) {
+				switch (mode) {
+					case ROTATE_MODEL:
+						R = glm::rotate(mat4(), (float) theta, vec3(1, 0, 0));
+						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
+						break;
+					case TRANSLATE_MODEL:
+						T = glm::translate(mat4(), vec3((curMousePos.x - prevMousePos.x) / width, 0, 0));
+						MODEL = T * MODEL;
+						break;
+					case SCALE_MODEL:
+						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(SCALE_UP, 1, 1));
+						else S = glm::scale(mat4(), vec3(SCALE_DOWN, 1, 1));
+						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
+						break;
+					default:break;
+				}
+			}
+
+			if (mouseMiddleClicked) {
+				switch (mode) {
+					case ROTATE_MODEL:
+						R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
+						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
+						break;
+					case TRANSLATE_MODEL:
+						T = glm::translate(mat4(), vec3(0, (curMousePos.x - prevMousePos.x) / width, 0));
+						MODEL = T * MODEL;
+						break;
+					case SCALE_MODEL:
+						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(1, SCALE_UP, 1));
+						else S = glm::scale(mat4(), vec3(1, SCALE_DOWN, 1));
+						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
+						break;
+					default:break;
+				}
+			}
+
+			if (mouseRightClicked) {
+				switch (mode) {
+					case ROTATE_MODEL:
+						R = glm::rotate(mat4(), (float) theta, vec3(0, 0, 1));
+						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
+						break;
+					case TRANSLATE_MODEL:
+						T = glm::translate(mat4(), vec3(0, 0, (curMousePos.x - prevMousePos.x) / width));
+						MODEL = T * MODEL;
+						break;
+					case SCALE_MODEL:
+						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(1, 1, SCALE_UP));
+						else S = glm::scale(mat4(), vec3(1, 1, SCALE_DOWN));
+						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
+						break;
+					default:break;
+				}
+			}
+
+			prevMousePos = curMousePos;
+		}
+	}
+
+	eventHandled = true;
 
 	return eventHandled;
 }
@@ -434,7 +590,23 @@ bool A2::mouseButtonInputEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (!ImGui::IsMouseHoveringAnyWindow()) {
+		if (actions == GLFW_PRESS) {
+			double xpos, ypos;
+			glfwGetCursorPos(m_window, &xpos, &ypos);
+			prevMousePos = {(float) xpos, (float) ypos, 0.0f};
+			if (button == GLFW_MOUSE_BUTTON_LEFT) mouseLeftClicked = true;
+			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = true;
+			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = true;
+		}
+		if (actions == GLFW_RELEASE) {
+			if (button == GLFW_MOUSE_BUTTON_LEFT) mouseLeftClicked = false;
+			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = false;
+			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = false;
+		}
+	}
+
+	eventHandled = true;
 
 	return eventHandled;
 }
