@@ -9,7 +9,11 @@ using namespace std;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/io.hpp>
+#include <math.h>
+
 using namespace glm;
+
+#define PI 3.14
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -60,29 +64,33 @@ void A2::init()
 
 	mapVboDataToVertexAttributeLocation();
 
+	float angle = PI / 4;
+	ASPECT = m_windowHeight / m_windowWidth;
 	float a[16];
-	a[0] = 1;
+
+	a[0] = (1.0f / tan(angle / 2)) / ASPECT;
 	a[1] = 0;
 	a[2] = 0;
 	a[3] = 0;
 	a[4] = 0;
-	a[5] = 1;
+	a[5] = 1.0f / tan(angle / 2);
 	a[6] = 0;
 	a[7] = 0;
 	a[8] = 0;
 	a[9] = 0;
-	a[10] = (FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
-	a[11] = 1;
+	a[10] = -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
+	a[11] = -1;
 	a[12] = 0;
 	a[13] = 0;
 	a[14] = (-2 * FAR_PLANE * NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
 	a[15] = 0;
 
 	MODEL = glm::mat4();
-	VIEW = glm::lookAt( 
-		glm::vec3(0.0f, 32.0f, 32.0f),
+	MODEL = glm::rotate(mat4(), (float) PI/8, vec3(0.0f, 1.0f, 0.0f)) * MODEL;
+	VIEW = glm::lookAt(
+		glm::vec3(4.0f, 0.0f, 10.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::vec3(3.0f, 1.0f, 0.0f));
 	PROJ = make_mat4(a);
 }
 
@@ -214,7 +222,7 @@ void A2::drawCube(float dx, float dy, float dz) {
 	for (int i = -1; i < 2; i += 2) {
 		for (int j = -1; j < 2; j += 2) {
 			for (int k = -1; k < 2; k += 2) {
-				cube_verts[n++] = vec4(i+dx, j+dy, k+dz, 1); 
+				cube_verts[n++] = vec4(i+dx, j+dy, k+dz, 1);
 			}
 		}
 	}
@@ -225,30 +233,65 @@ void A2::drawCube(float dx, float dy, float dz) {
 		cube_verts[i] = PROJ * VIEW * MODEL * cube_verts[i];
 	}
 
-	drawLine(vec2(cube_verts[0].x / cube_verts[0].z, cube_verts[0].y / cube_verts[0].z), vec2(cube_verts[4].x / cube_verts[4].z, cube_verts[4].y / cube_verts[4].z));
-	drawLine(vec2(cube_verts[4].x / cube_verts[4].z, cube_verts[4].y / cube_verts[4].z), vec2(cube_verts[5].x / cube_verts[5].z, cube_verts[5].y / cube_verts[5].z));
-	drawLine(vec2(cube_verts[5].x / cube_verts[5].z, cube_verts[5].y / cube_verts[5].z), vec2(cube_verts[1].x / cube_verts[1].z, cube_verts[1].y / cube_verts[1].z));
-	drawLine(vec2(cube_verts[1].x / cube_verts[1].z, cube_verts[1].y / cube_verts[1].z), vec2(cube_verts[0].x / cube_verts[0].z, cube_verts[0].y / cube_verts[0].z));
-	drawLine(vec2(cube_verts[2].x / cube_verts[2].z, cube_verts[2].y / cube_verts[2].z), vec2(cube_verts[6].x / cube_verts[6].z, cube_verts[6].y / cube_verts[6].z));
-	drawLine(vec2(cube_verts[6].x / cube_verts[6].z, cube_verts[6].y / cube_verts[6].z), vec2(cube_verts[7].x / cube_verts[7].z, cube_verts[7].y / cube_verts[7].z));
-	drawLine(vec2(cube_verts[7].x / cube_verts[7].z, cube_verts[7].y / cube_verts[7].z), vec2(cube_verts[3].x / cube_verts[3].z, cube_verts[3].y / cube_verts[3].z));
-	drawLine(vec2(cube_verts[3].x / cube_verts[3].z, cube_verts[3].y / cube_verts[3].z), vec2(cube_verts[2].x / cube_verts[2].z, cube_verts[2].y / cube_verts[2].z));
-	drawLine(vec2(cube_verts[1].x / cube_verts[1].z, cube_verts[1].y / cube_verts[1].z), vec2(cube_verts[3].x / cube_verts[3].z, cube_verts[3].y / cube_verts[3].z));
-	drawLine(vec2(cube_verts[0].x / cube_verts[0].z, cube_verts[0].y / cube_verts[0].z), vec2(cube_verts[2].x / cube_verts[2].z, cube_verts[2].y / cube_verts[2].z));
-	drawLine(vec2(cube_verts[4].x / cube_verts[4].z, cube_verts[4].y / cube_verts[4].z), vec2(cube_verts[6].x / cube_verts[6].z, cube_verts[6].y / cube_verts[6].z));
-	drawLine(vec2(cube_verts[5].x / cube_verts[5].z, cube_verts[5].y / cube_verts[5].z), vec2(cube_verts[7].x / cube_verts[7].z, cube_verts[7].y / cube_verts[7].z));
+	drawLine(vec2(cube_verts[0].x / cube_verts[0].w, cube_verts[0].y / cube_verts[0].w), vec2(cube_verts[4].x / cube_verts[4].w, cube_verts[4].y / cube_verts[4].w));
+	drawLine(vec2(cube_verts[4].x / cube_verts[4].w, cube_verts[4].y / cube_verts[4].w), vec2(cube_verts[5].x / cube_verts[5].w, cube_verts[5].y / cube_verts[5].w));
+	drawLine(vec2(cube_verts[5].x / cube_verts[5].w, cube_verts[5].y / cube_verts[5].w), vec2(cube_verts[1].x / cube_verts[1].w, cube_verts[1].y / cube_verts[1].w));
+	drawLine(vec2(cube_verts[1].x / cube_verts[1].w, cube_verts[1].y / cube_verts[1].w), vec2(cube_verts[0].x / cube_verts[0].w, cube_verts[0].y / cube_verts[0].w));
+	drawLine(vec2(cube_verts[2].x / cube_verts[2].w, cube_verts[2].y / cube_verts[2].w), vec2(cube_verts[6].x / cube_verts[6].w, cube_verts[6].y / cube_verts[6].w));
+	drawLine(vec2(cube_verts[6].x / cube_verts[6].w, cube_verts[6].y / cube_verts[6].w), vec2(cube_verts[7].x / cube_verts[7].w, cube_verts[7].y / cube_verts[7].w));
+	drawLine(vec2(cube_verts[7].x / cube_verts[7].w, cube_verts[7].y / cube_verts[7].w), vec2(cube_verts[3].x / cube_verts[3].w, cube_verts[3].y / cube_verts[3].w));
+	drawLine(vec2(cube_verts[3].x / cube_verts[3].w, cube_verts[3].y / cube_verts[3].w), vec2(cube_verts[2].x / cube_verts[2].w, cube_verts[2].y / cube_verts[2].w));
+	drawLine(vec2(cube_verts[1].x / cube_verts[1].w, cube_verts[1].y / cube_verts[1].w), vec2(cube_verts[3].x / cube_verts[3].w, cube_verts[3].y / cube_verts[3].w));
+	drawLine(vec2(cube_verts[0].x / cube_verts[0].w, cube_verts[0].y / cube_verts[0].w), vec2(cube_verts[2].x / cube_verts[2].w, cube_verts[2].y / cube_verts[2].w));
+	drawLine(vec2(cube_verts[4].x / cube_verts[4].w, cube_verts[4].y / cube_verts[4].w), vec2(cube_verts[6].x / cube_verts[6].w, cube_verts[6].y / cube_verts[6].w));
+	drawLine(vec2(cube_verts[5].x / cube_verts[5].w, cube_verts[5].y / cube_verts[5].w), vec2(cube_verts[7].x / cube_verts[7].w, cube_verts[7].y / cube_verts[7].w));
 }
 
+void A2::drawModelCoord(float dx, float dy, float dz) {
+	glm::vec4 xaxis = vec4(0.5f, 0.0f, 0.0f, 1);
+	glm::vec4 yaxis = vec4(0.0f, 0.5f, 0.0f, 1);
+	glm::vec4 zaxis = vec4(0.0f, 0.0f, 0.5f, 1);
+	glm::vec4 center = vec4(0.0f, 0.0f, 0.0f, 1);
+
+	xaxis = PROJ * VIEW * MODEL * xaxis;
+	yaxis = PROJ * VIEW * MODEL * yaxis;
+	zaxis = PROJ * VIEW * MODEL * zaxis;
+	center = PROJ * VIEW * MODEL * center;
+
+	setLineColour(vec3(0.0f, 0.0f, 1.0f));
+	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(xaxis.x / xaxis.w, xaxis.y / xaxis.w));
+	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(yaxis.x / yaxis.w, yaxis.y / yaxis.w));
+	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(zaxis.x / zaxis.w, zaxis.y / zaxis.w));
+}
+
+void A2::drawWorldCoord(float dx, float dy, float dz) {
+	glm::vec4 xaxis = vec4(2.0f, 0.0f, 0.0f, 1);
+	glm::vec4 yaxis = vec4(0.0f, 2.0f, 0.0f, 1);
+	glm::vec4 zaxis = vec4(0.0f, 0.0f, 2.0f, 1);
+	glm::vec4 center = vec4(0.0f, 0.0f, 0.0f, 1);
+
+	xaxis = PROJ * VIEW * xaxis;
+	yaxis = PROJ * VIEW * yaxis;
+	zaxis = PROJ * VIEW * zaxis;
+	center = PROJ * VIEW * center;
+
+	setLineColour(vec3(1.0f, 0.0f, 0.0f));
+	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(xaxis.x / xaxis.w, xaxis.y / xaxis.w));
+	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(yaxis.x / yaxis.w, yaxis.y / yaxis.w));
+	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(zaxis.x / zaxis.w, zaxis.y / zaxis.w));
+}
 /*----------------------------------------------------------------------------------------
 *
 * Called once per frame, before guiLogic().
 */
 void A2::appLogic() {
-	// Place per frame, application logic here ...	
+	// Place per frame, application logic here ...
 
-	// Call at the beginning of frame, before drawing lines:	
+	// Call at the beginning of frame, before drawing lines:
 	initLineData();
 	drawCube(0, 0, 0);
+	drawModelCoord(0, 0, 0);
+	drawWorldCoord(0, 0, 0);
 	// // Draw outer square:
 	// setLineColour(vec3(1.0f, 0.7f, 0.8f));
 	// drawLine(vec2(-0.5f, -0.5f), vec2(0.5f, -0.5f));

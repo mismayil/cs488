@@ -60,7 +60,9 @@ protected:
 			const glm::vec2 & v1
 	);
 	void drawCube(float dx, float dy, float dz);
-
+	void drawModelCoord(float dx, float dy, float dz);
+	void drawWorldCoord(float dx, float dy, float dz);
+	
 	ShaderProgram m_shader;
 
 	GLuint m_vao;            // Vertex Array Object
@@ -75,7 +77,8 @@ protected:
 	glm::mat4 VIEW;
 	glm::mat4 MODEL;
 
-	const float NEAR_PLANE = 1;
-	const float FAR_PLANE = -1;
+	float ASPECT;
+	float NEAR_PLANE;
+	float FAR_PLANE;
 
 };
