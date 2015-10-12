@@ -20,6 +20,8 @@ using namespace glm;
 #define SCALE_UP 		1.05f
 #define SCALE_DOWN 		(double) 1 / SCALE_UP
 #define FACTOR 			(double) 2 / m_windowWidth
+#define FOV_MIN 		5 * PI / 180
+#define FOV_MAX			160 * PI / 180
 
 // modes
 enum modes {
@@ -89,14 +91,23 @@ void A2::init()
 	mapVboDataToVertexAttributeLocation();
 
 	mode = 0;
-	FAR_PLANE = -1;
-	NEAR_PLANE = 1;
 	ASPECT = m_windowHeight / m_windowWidth;
+	FOV = PI / 6;
+	NP = 1;
+	FP = -1;
 
-	float fov = PI / 6;
+	MODEL = glm::mat4();
+	VIEW = glm::lookAt(
+		glm::vec3(0.0f, 0.0f, 10.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f));
+	PROJ = setProj(FOV, ASPECT, FP, NP);
+}
+
+glm::mat4 A2::setProj(float fov, float aspect, float f, float n) {
 	float p[16];
 
-	p[0] = (1.0f / tan(fov / 2)) / ASPECT;
+	p[0] = (1.0f / tan(fov / 2)) / aspect;
 	p[1] = 0;
 	p[2] = 0;
 	p[3] = 0;
@@ -106,24 +117,15 @@ void A2::init()
 	p[7] = 0;
 	p[8] = 0;
 	p[9] = 0;
-	p[10] = -(FAR_PLANE + NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
+	p[10] = -(f + n) / (f - n);
 	p[11] = -1;
 	p[12] = 0;
 	p[13] = 0;
-	p[14] = (-2 * FAR_PLANE * NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE);
+	p[14] = (-2 * f * n) / (f - n);
 	p[15] = 0;
 
-	MODEL = glm::mat4();
-	VIEW = glm::lookAt(
-		glm::vec3(0.0f, 0.0f, 10.0f),
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f));
-
-	// float *v = glm::value_ptr(VIEW);
-	// for(int i = 0; i < 16; i++) {
-	// 	cout << v[i] << endl;
-	// }
-	PROJ = glm::make_mat4(p);
+	glm::mat4 proj = glm::make_mat4(p);
+	return proj;
 }
 
 void A2::reset() {}
@@ -249,6 +251,7 @@ void A2::drawLine(
 	m_vertexData.numVertices += 2;
 }
 
+// draw cube
 void A2::drawCube() {
 	glm::vec4 cube[8];
 
@@ -519,6 +522,11 @@ bool A2::mouseMoveEvent (
 						VIEW = T * VIEW;
 						break;
 					case PERSPECTIVE:
+						FOV += theta;
+						FOV = FOV < FOV_MIN ? FOV_MIN : FOV;
+						FOV = FOV > FOV_MAX ? FOV_MAX : FOV;
+						PROJ = setProj(FOV, ASPECT, FP, NP);
+						break;
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(1, 0, 0));
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;

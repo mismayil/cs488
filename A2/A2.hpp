@@ -63,6 +63,7 @@ protected:
 	void drawCube();
 	void drawModelCoord();
 	void drawWorldCoord();
+	glm::mat4 setProj(float fov, float aspect, float f, float n);
 
 	ShaderProgram m_shader;
 
@@ -80,8 +81,9 @@ protected:
 	glm::mat4 MODEL;
 
 	float ASPECT;
-	float NEAR_PLANE;
-	float FAR_PLANE;
+	float FOV;
+	float NP;
+	float FP;
 
 };
 
