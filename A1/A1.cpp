@@ -14,9 +14,9 @@ using namespace std;
 
 static const size_t DIM = 16;
 static const double SCALE_MIN_LIMIT = 0.1;
-static double SCALE_MAX_LIMIT = 10;
-static double SCALE_UP = 1.5f;
-static double SCALE_DOWN = (double) 1 / SCALE_UP;
+static const double SCALE_MAX_LIMIT = 10;
+static const double SCALE_UP = 1.5f;
+static const double SCALE_DOWN = (double) 1 / SCALE_UP;
 static double scales = 1;
 
 void A1::init_colours() {
