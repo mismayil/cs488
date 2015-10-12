@@ -15,6 +15,12 @@ using namespace glm;
 
 #define PI 3.1415926535
 
+#define SCALE_MIN_LIMIT 0.1
+#define SCALE_MAX_LIMIT 10
+#define SCALE_UP 		1.05f
+#define SCALE_DOWN 		(double) 1 / SCALE_UP
+#define FACTOR 			(double) 2 / m_windowWidth
+
 // modes
 enum modes {
 	ROTATE_VIEW,
@@ -25,20 +31,6 @@ enum modes {
 	SCALE_MODEL,
 	VIEWPORT
 };
-
-// #define ROTATE_VIEW 	0
-// #define TRANSLATE_VIEW 	1
-// #define PERSPECTIVE 	2
-// #define ROTATE_MODEL	3
-// #define TRANSLATE_MODEL 4
-// #define SCALE_MODEL		5
-// #define VIEWPORT		6
-
-#define SCALE_MIN_LIMIT = 0.1;
-#define SCALE_MAX_LIMIT = 10;
-#define SCALE_UP = 1.005f;
-#define SCALE_DOWN = (double) 1 / SCALE_UP;
-// #define FACTOR =
 
 point prevMousePos;
 bool mouseLeftClicked = false;
@@ -101,7 +93,7 @@ void A2::init()
 	NEAR_PLANE = 1;
 	ASPECT = m_windowHeight / m_windowWidth;
 
-	float fov = PI / 4;
+	float fov = PI / 6;
 	float p[16];
 
 	p[0] = (1.0f / tan(fov / 2)) / ASPECT;
@@ -126,6 +118,11 @@ void A2::init()
 		glm::vec3(0.0f, 0.0f, 10.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f));
+
+	// float *v = glm::value_ptr(VIEW);
+	// for(int i = 0; i < 16; i++) {
+	// 	cout << v[i] << endl;
+	// }
 	PROJ = glm::make_mat4(p);
 }
 
@@ -513,6 +510,15 @@ bool A2::mouseMoveEvent (
 
 			if (mouseLeftClicked) {
 				switch (mode) {
+					case ROTATE_VIEW:
+						R = glm::rotate(mat4(), (float) -theta, vec3(1, 0, 0));
+						VIEW = VIEW * R * glm::inverse(VIEW) * VIEW;
+						break;
+					case TRANSLATE_VIEW:
+						T = glm::translate(mat4(), vec3(-(curMousePos.x - prevMousePos.x) * FACTOR, 0, 0));
+						VIEW = T * VIEW;
+						break;
+					case PERSPECTIVE:
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(1, 0, 0));
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
@@ -532,6 +538,15 @@ bool A2::mouseMoveEvent (
 
 			if (mouseMiddleClicked) {
 				switch (mode) {
+					case ROTATE_VIEW:
+						R = glm::rotate(mat4(), (float) -theta, vec3(0, 1, 0));
+						VIEW = VIEW * R * glm::inverse(VIEW) * VIEW;
+						break;
+					case TRANSLATE_VIEW:
+						T = glm::translate(mat4(), vec3(0, -(curMousePos.x - prevMousePos.x) * FACTOR, 0));
+						VIEW = T * VIEW;
+						break;
+					case PERSPECTIVE:
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
@@ -551,6 +566,15 @@ bool A2::mouseMoveEvent (
 
 			if (mouseRightClicked) {
 				switch (mode) {
+					case ROTATE_VIEW:
+						R = glm::rotate(mat4(), (float) -theta, vec3(0, 0, 1));
+						VIEW = VIEW * R * glm::inverse(VIEW) * VIEW;
+						break;
+					case TRANSLATE_VIEW:
+						T = glm::translate(mat4(), vec3(0, 0, -(curMousePos.x - prevMousePos.x) * FACTOR));
+						VIEW = T * VIEW;
+						break;
+					case PERSPECTIVE:
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(0, 0, 1));
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;

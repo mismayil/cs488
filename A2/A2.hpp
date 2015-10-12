@@ -25,7 +25,6 @@ public:
 	GLsizei numVertices;
 };
 
-
 class A2 : public CS488Window {
 public:
 	A2();
