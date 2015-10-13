@@ -43,7 +43,7 @@ enum modes {
 	VIEWPORT
 };
 
-point prevMousePos;
+glm::vec4 prevMousePos, onClickMousePos;
 bool mouseLeftClicked = false;
 bool mouseMiddleClicked = false;
 bool mouseRightClicked = false;
@@ -105,6 +105,10 @@ void A2::init()
 	NP = 1.0f;
 	FP = -1.0f;
 
+	vpStart = glm::vec4(10, 50, 0, 1);
+	vpWidth = 100;
+	vpHeight = 100;
+	//VP = getViewport(vpStart, vpWidth, vpHeight, FP, NP);
 	MODEL = glm::mat4();
 	CMODEL = glm::mat4();
 	VIEW = glm::lookAt(
@@ -122,6 +126,13 @@ glm::mat4 A2::getProj(float fov, float aspect, float f, float n) {
 		vec4(0, 0, (-2 * f * n) / (f - n), 0)
 	);
 	return proj;
+}
+
+glm::mat4 A2::getViewport(glm::vec4 vp, float width, float height, float f, float n) {
+	glm::mat4 viewport = mat4();
+	viewport = glm::scale(mat4(), vec3(width/2, height / 2, (f - n) / 2)) * viewport;
+	viewport = glm::translate(mat4(), vec3(vp.x + width / 2, vp.y + height / 2, (f + n) / 2)) * viewport;
+	return viewport;
 }
 
 void A2::reset() {}
@@ -247,12 +258,56 @@ void A2::drawLine(
 	m_vertexData.numVertices += 2;
 }
 
+// draw viewport
+void A2::drawViewport() {
+	setLineColour(vec3(0.0f, 0.0f, 0.0f));
+	glm::vec4 LB = PROJ * VIEW * glm::vec4(vpStart.x, vpStart.y, 0, 1);
+	glm::vec4 LT = PROJ * VIEW * glm::vec4(vpStart.x, vpStart.y + vpHeight, 0, 1);
+	glm::vec4 RB = PROJ * VIEW * glm::vec4(vpStart.x + vpWidth, vpStart.y, 0, 1);
+	glm::vec4 RT = PROJ * VIEW * glm::vec4(vpStart.x + vpWidth, vpStart.y + vpHeight, 0, 1);
+
+	drawLine(vec2(LB.x, LB.y), vec2(RB.x, RB.y));
+	drawLine(vec2(LB.x, LB.y), vec2(LT.x, LT.y));
+	drawLine(vec2(LT.x, LT.y), vec2(RT.x, RT.y));
+	drawLine(vec2(RB.x, RB.y), vec2(RT.x, RT.y));
+}
+
 // draw cube
 void A2::drawCube() {
 	glm::vec4 cube[8];
+	vector<plane> planes;
+	vector<line> lines;
+	glm::vec4 A, B, P, n;
 
-	glm::vec4 P = glm::vec4(0.0f, 0.0f, NP, 1.0f);
-	glm::vec4 n = glm::vec4(0.0f, 0.0f, 1, 0.0f);
+	// near plane
+	P = glm::vec4(0.0f, 0.0f, NP, 1.0f);
+	n = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+	plane nearPlane = {P, n};
+
+	// far plane
+	P = glm::vec4(0.0f, 0.0f, FP, 1.0f);
+	n = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+	plane farPlane = {P, n};
+
+	// // left plane
+	// P = glm::vec4(-1.0f, 0.0f, 0.0f, 1.0f);
+	// n = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	// planes.push_back({P, n});
+	//
+	// // right plane
+	// P = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	// n = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	// planes.push_back({P, n});
+	//
+	// // top plane
+	// P = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	// n = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	// planes.push_back({P, n});
+	//
+	// // bottom plane
+	// P = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
+	// n = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	// planes.push_back({P, n});
 
 	int l = 0;
 	for (int i = -1; i < 2; i += 2) {
@@ -269,18 +324,43 @@ void A2::drawCube() {
 		cube[i] = VIEW * MODEL * cube[i];
 	}
 
-	clip(cube[0], cube[4], P, n);
-	clip(cube[4], cube[5], P, n);
-	clip(cube[5], cube[1], P, n);
-	clip(cube[1], cube[0], P, n);
-	clip(cube[2], cube[6], P, n);
-	clip(cube[6], cube[7], P, n);
-	clip(cube[7], cube[3], P, n);
-	clip(cube[3], cube[2], P, n);
-	clip(cube[1], cube[3], P, n);
-	clip(cube[0], cube[2], P, n);
-	clip(cube[4], cube[6], P, n);
-	clip(cube[5], cube[7], P, n);
+	lines.push_back({cube[0], cube[4]});
+	lines.push_back({cube[4], cube[5]});
+	lines.push_back({cube[5], cube[1]});
+	lines.push_back({cube[1], cube[0]});
+	lines.push_back({cube[2], cube[6]});
+	lines.push_back({cube[6], cube[7]});
+	lines.push_back({cube[7], cube[3]});
+	lines.push_back({cube[3], cube[2]});
+	lines.push_back({cube[1], cube[3]});
+	lines.push_back({cube[0], cube[2]});
+	lines.push_back({cube[4], cube[6]});
+	lines.push_back({cube[5], cube[7]});
+
+	lines = clip(lines, nearPlane);
+	lines = clip(lines, farPlane);
+
+	for (int i = 0; i < lines.size(); i++) {
+		A = lines[i].A;
+		B = lines[i].B;
+		A = PROJ * A;
+		B = PROJ * B;
+		A = A / A.w;
+		B = B / B.w;
+		lines[i] = {A, B};
+	}
+
+	// for (int i = 0; i < planes.size(); i++) {
+	// 	lines = clip(lines, planes[i]);
+	// }
+
+	for (int i = 0; i < lines.size(); i++) {
+		A = lines[i].A;
+		B = lines[i].B;
+		A = VP * A;
+		B = VP * B;
+		drawLine(vec2(A.x, A.y), vec2(B.x, B.y));
+	}
 }
 
 // draw model coordinate system
@@ -327,23 +407,29 @@ void A2::drawWorldCoord() {
 	drawLine(vec2(center.x, center.y), vec2(zaxis.x, zaxis.y));
 }
 
-void A2::clip(glm::vec4 A, glm::vec4 B, glm::vec4 P, glm::vec4 n) {
-	float vecA = glm::dot(A - P, n);
-	float vecB = glm::dot(B - P, n);
-	float t = vecA / (vecA - vecB);
+vector<line> A2::clip(vector<line> lines, plane plane) {
+	vector<line> newLines;
+	float dotA, dotB, t;
+	glm::vec4 A, B;
 
-	if (vecA < 0 && vecB < 0) goto draw;
-	if (vecA >=0 && vecB >= 0) return;
+	for (int i = 0; i < lines.size(); i++) {
+		A = lines[i].A;
+		B = lines[i].B;
 
-	if (vecA > 0) A = A + t * (B - A);
-	else B = A + t * (B - A);
+		dotA = glm::dot(A - plane.P, plane.n);
+		dotB = glm::dot(B - plane.P, plane.n);
+		t = dotA / (dotA - dotB);
 
-	draw:
-		A = PROJ * A;
-		A = A / A.w;
-		B = PROJ * B;
-		B = B / B.w;
-		drawLine(vec2(A.x, A.y), vec2(B.x, B.y));
+		if (dotA < 0 && dotB < 0) goto add;
+		if (dotA >=0 && dotB >= 0) continue;
+
+		if (dotA > 0) A = A + t * (B - A);
+		else B = A + t * (B - A);
+
+		add: newLines.push_back(lines[i]);
+	}
+
+	return newLines;
 }
 
 /*----------------------------------------------------------------------------------------
@@ -355,6 +441,7 @@ void A2::appLogic() {
 
 	// Call at the beginning of frame, before drawing lines:
 	initLineData();
+	drawViewport();
 	drawCube();
 	drawModelCoord();
 	drawWorldCoord();
@@ -532,8 +619,8 @@ bool A2::mouseMoveEvent (
 		if (mouseLeftClicked || mouseMiddleClicked || mouseRightClicked) {
 			int width, height;
 			glfwGetWindowSize(m_window, &width, &height);
-			point center = {(float)width / 2.0f, (float)height / 2.0f, 0.0f};
-			point curMousePos = {(float)xPos, (float)yPos, 0.0f};
+			glm::vec4 center = glm::vec4((float)width / 2.0f, (float)height / 2.0f, 0.0f, 1.0f);
+			glm::vec4 curMousePos = glm::vec4((float)xPos, (float)yPos, 0.0f, 1.0f);
 			double theta = -(curMousePos.x - prevMousePos.x) * PI / m_windowWidth;
 			glm::mat4 R, T, S;
 
@@ -564,9 +651,19 @@ bool A2::mouseMoveEvent (
 						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
-						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(SCALE_UP, 1, 1));
-						else S = glm::scale(mat4(), vec3(SCALE_DOWN, 1, 1));
+						if (curMousePos.x > prevMousePos.x && scales * SCALE_UP < SCALE_MAX_LIMIT) {
+							S = glm::scale(mat4(), vec3(SCALE_UP, 1, 1));
+							scales *= SCALE_UP;
+						}
+						if (curMousePos.x < prevMousePos.x && scales * SCALE_DOWN > SCALE_MIN_LIMIT) {
+							S = glm::scale(mat4(), vec3(SCALE_DOWN, 1, 1));
+							scales *= SCALE_DOWN;
+						}
 						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
+						break;
+					case VIEWPORT:
+						vpWidth = curMousePos.x - vpStart.x;
+						vpHeight = curMousePos.y - vpStart.y;
 						break;
 					default:break;
 				}
@@ -598,8 +695,14 @@ bool A2::mouseMoveEvent (
 						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
-						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(1, SCALE_UP, 1));
-						else S = glm::scale(mat4(), vec3(1, SCALE_DOWN, 1));
+					if (curMousePos.x > prevMousePos.x && scales * SCALE_UP < SCALE_MAX_LIMIT) {
+						S = glm::scale(mat4(), vec3(1, SCALE_UP, 1));
+						scales *= SCALE_UP;
+					}
+					if (curMousePos.x < prevMousePos.x && scales * SCALE_DOWN > SCALE_MIN_LIMIT) {
+						S = glm::scale(mat4(), vec3(1, SCALE_DOWN, 1));
+						scales *= SCALE_DOWN;
+					}
 						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
 						break;
 					default:break;
@@ -632,8 +735,14 @@ bool A2::mouseMoveEvent (
 						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
-						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(1, 1, SCALE_UP));
-						else S = glm::scale(mat4(), vec3(1, 1, SCALE_DOWN));
+					if (curMousePos.x > prevMousePos.x && scales * SCALE_UP < SCALE_MAX_LIMIT) {
+						S = glm::scale(mat4(), vec3(1, 1, SCALE_UP));
+						scales *= SCALE_UP;
+					}
+					if (curMousePos.x < prevMousePos.x && scales * SCALE_DOWN > SCALE_MIN_LIMIT) {
+						S = glm::scale(mat4(), vec3(1, 1, SCALE_DOWN));
+						scales *= SCALE_DOWN;
+					}
 						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
 						break;
 					default:break;
@@ -664,13 +773,17 @@ bool A2::mouseButtonInputEvent (
 		if (actions == GLFW_PRESS) {
 			double xpos, ypos;
 			glfwGetCursorPos(m_window, &xpos, &ypos);
-			prevMousePos = {(float) xpos, (float) ypos, 0.0f};
+			prevMousePos = glm::vec4((float) xpos, (float) ypos, 0.0f, 1.0f);
+			vpStart = glm::vec4((float) xpos, (float) ypos, 0.0f, 1.0f);
 			if (button == GLFW_MOUSE_BUTTON_LEFT) mouseLeftClicked = true;
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = true;
 			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = true;
 		}
 		if (actions == GLFW_RELEASE) {
-			if (button == GLFW_MOUSE_BUTTON_LEFT) mouseLeftClicked = false;
+			if (button == GLFW_MOUSE_BUTTON_LEFT) {
+				mouseLeftClicked = false;
+				if (mode == VIEWPORT) VP = getViewport(vpStart, vpWidth, vpHeight, FP, NP);
+			}
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = false;
 			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = false;
 		}

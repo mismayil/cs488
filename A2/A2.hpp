@@ -25,6 +25,16 @@ public:
 	GLsizei numVertices;
 };
 
+struct line {
+	glm::vec4 A;
+	glm::vec4 B;
+};
+
+struct plane {
+	glm::vec4 P;
+	glm::vec4 n;
+};
+
 class A2 : public CS488Window {
 public:
 	A2();
@@ -60,11 +70,13 @@ protected:
 	);
 
 	void reset();
+	void drawViewport();
 	void drawCube();
 	void drawModelCoord();
 	void drawWorldCoord();
 	glm::mat4 getProj(float fov, float aspect, float f, float n);
-	void clip(glm::vec4 A, glm::vec4 B, glm::vec4 P, glm::vec4 n);
+	glm::mat4 getViewport(glm::vec4 vp, float width, float height, float f, float n);
+	std::vector<line> clip(std::vector<line> lines, plane plane);
 
 	ShaderProgram m_shader;
 
@@ -77,20 +89,19 @@ protected:
 	glm::vec3 m_currentLineColour;
 	int mode;
 
+	glm::mat4 VP;
 	glm::mat4 PROJ;
 	glm::mat4 VIEW;
 	glm::mat4 MODEL;
 	glm::mat4 CMODEL;
+
+	glm::vec4 vpStart;
+	float vpWidth;
+	float vpHeight;
 
 	float ASPECT;
 	float FOV;
 	float NP;
 	float FP;
 
-};
-
-struct point {
-	float x;
-	float y;
-	float z;
 };
