@@ -15,13 +15,22 @@ using namespace glm;
 
 #define PI 3.1415926535
 
+// scale constants
 #define SCALE_MIN_LIMIT 0.1
 #define SCALE_MAX_LIMIT 10
 #define SCALE_UP 		1.05f
 #define SCALE_DOWN 		(double) 1 / SCALE_UP
+
+// balance factor
 #define FACTOR 			(double) 2 / m_windowWidth
+
+// field of view constants
 #define FOV_MIN 		5 * PI / 180
 #define FOV_MAX			160 * PI / 180
+
+// near-far plane constants
+#define NPC 0.1f
+#define FPC 0.1f
 
 // modes
 enum modes {
@@ -93,38 +102,25 @@ void A2::init()
 	mode = 0;
 	ASPECT = m_windowHeight / m_windowWidth;
 	FOV = PI / 6;
-	NP = 1;
-	FP = -1;
+	NP = 1.0f;
+	FP = -1.0f;
 
 	MODEL = glm::mat4();
+	CMODEL = glm::mat4();
 	VIEW = glm::lookAt(
 		glm::vec3(0.0f, 0.0f, 10.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f));
-	PROJ = setProj(FOV, ASPECT, FP, NP);
+	PROJ = getProj(FOV, ASPECT, FP, NP);
 }
 
-glm::mat4 A2::setProj(float fov, float aspect, float f, float n) {
-	float p[16];
-
-	p[0] = (1.0f / tan(fov / 2)) / aspect;
-	p[1] = 0;
-	p[2] = 0;
-	p[3] = 0;
-	p[4] = 0;
-	p[5] = 1.0f / tan(fov / 2);
-	p[6] = 0;
-	p[7] = 0;
-	p[8] = 0;
-	p[9] = 0;
-	p[10] = -(f + n) / (f - n);
-	p[11] = -1;
-	p[12] = 0;
-	p[13] = 0;
-	p[14] = (-2 * f * n) / (f - n);
-	p[15] = 0;
-
-	glm::mat4 proj = glm::make_mat4(p);
+glm::mat4 A2::getProj(float fov, float aspect, float f, float n) {
+	glm::mat4 proj = glm::mat4(
+		vec4((1.0f / tan(fov / 2)) / aspect, 0, 0, 0),
+		vec4(0, 1.0f / tan(fov / 2), 0, 0),
+		vec4(0, 0, -(f + n) / (f - n), -1),
+		vec4(0, 0, (-2 * f * n) / (f - n), 0)
+	);
 	return proj;
 }
 
@@ -255,11 +251,14 @@ void A2::drawLine(
 void A2::drawCube() {
 	glm::vec4 cube[8];
 
-	int n = 0;
+	glm::vec4 P = glm::vec4(0.0f, 0.0f, NP, 1.0f);
+	glm::vec4 n = glm::vec4(0.0f, 0.0f, 1, 0.0f);
+
+	int l = 0;
 	for (int i = -1; i < 2; i += 2) {
 		for (int j = -1; j < 2; j += 2) {
 			for (int k = -1; k < 2; k += 2) {
-				cube[n++] = vec4(i, j, k, 1);
+				cube[l++] = vec4(i, j, k, 1);
 			}
 		}
 	}
@@ -267,21 +266,21 @@ void A2::drawCube() {
 	setLineColour(vec3(1.0f, 1.0f, 1.0f));
 
 	for (int i = 0; i < 8; i++) {
-		cube[i] = PROJ * VIEW * MODEL * cube[i];
+		cube[i] = VIEW * MODEL * cube[i];
 	}
 
-	drawLine(vec2(cube[0].x / cube[0].w, cube[0].y / cube[0].w), vec2(cube[4].x / cube[4].w, cube[4].y / cube[4].w));
-	drawLine(vec2(cube[4].x / cube[4].w, cube[4].y / cube[4].w), vec2(cube[5].x / cube[5].w, cube[5].y / cube[5].w));
-	drawLine(vec2(cube[5].x / cube[5].w, cube[5].y / cube[5].w), vec2(cube[1].x / cube[1].w, cube[1].y / cube[1].w));
-	drawLine(vec2(cube[1].x / cube[1].w, cube[1].y / cube[1].w), vec2(cube[0].x / cube[0].w, cube[0].y / cube[0].w));
-	drawLine(vec2(cube[2].x / cube[2].w, cube[2].y / cube[2].w), vec2(cube[6].x / cube[6].w, cube[6].y / cube[6].w));
-	drawLine(vec2(cube[6].x / cube[6].w, cube[6].y / cube[6].w), vec2(cube[7].x / cube[7].w, cube[7].y / cube[7].w));
-	drawLine(vec2(cube[7].x / cube[7].w, cube[7].y / cube[7].w), vec2(cube[3].x / cube[3].w, cube[3].y / cube[3].w));
-	drawLine(vec2(cube[3].x / cube[3].w, cube[3].y / cube[3].w), vec2(cube[2].x / cube[2].w, cube[2].y / cube[2].w));
-	drawLine(vec2(cube[1].x / cube[1].w, cube[1].y / cube[1].w), vec2(cube[3].x / cube[3].w, cube[3].y / cube[3].w));
-	drawLine(vec2(cube[0].x / cube[0].w, cube[0].y / cube[0].w), vec2(cube[2].x / cube[2].w, cube[2].y / cube[2].w));
-	drawLine(vec2(cube[4].x / cube[4].w, cube[4].y / cube[4].w), vec2(cube[6].x / cube[6].w, cube[6].y / cube[6].w));
-	drawLine(vec2(cube[5].x / cube[5].w, cube[5].y / cube[5].w), vec2(cube[7].x / cube[7].w, cube[7].y / cube[7].w));
+	clip(cube[0], cube[4], P, n);
+	clip(cube[4], cube[5], P, n);
+	clip(cube[5], cube[1], P, n);
+	clip(cube[1], cube[0], P, n);
+	clip(cube[2], cube[6], P, n);
+	clip(cube[6], cube[7], P, n);
+	clip(cube[7], cube[3], P, n);
+	clip(cube[3], cube[2], P, n);
+	clip(cube[1], cube[3], P, n);
+	clip(cube[0], cube[2], P, n);
+	clip(cube[4], cube[6], P, n);
+	clip(cube[5], cube[7], P, n);
 }
 
 // draw model coordinate system
@@ -291,15 +290,19 @@ void A2::drawModelCoord() {
 	glm::vec4 zaxis = vec4(0.0f, 0.0f, 0.5f, 1);
 	glm::vec4 center = vec4(0.0f, 0.0f, 0.0f, 1);
 
-	xaxis = PROJ * VIEW * MODEL * xaxis;
-	yaxis = PROJ * VIEW * MODEL * yaxis;
-	zaxis = PROJ * VIEW * MODEL * zaxis;
-	center = PROJ * VIEW * MODEL * center;
+	xaxis = PROJ * VIEW * CMODEL * xaxis;
+	xaxis = xaxis / xaxis.w;
+	yaxis = PROJ * VIEW * CMODEL * yaxis;
+	yaxis = yaxis / yaxis.w;
+	zaxis = PROJ * VIEW * CMODEL * zaxis;
+	zaxis = zaxis / zaxis.w;
+	center = PROJ * VIEW * CMODEL * center;
+	center = center / center.w;
 
 	setLineColour(vec3(0.0f, 0.0f, 1.0f));
-	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(xaxis.x / xaxis.w, xaxis.y / xaxis.w));
-	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(yaxis.x / yaxis.w, yaxis.y / yaxis.w));
-	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(zaxis.x / zaxis.w, zaxis.y / zaxis.w));
+	drawLine(vec2(center.x, center.y), vec2(xaxis.x, xaxis.y));
+	drawLine(vec2(center.x, center.y), vec2(yaxis.x, yaxis.y));
+	drawLine(vec2(center.x, center.y), vec2(zaxis.x, zaxis.y));
 }
 
 // draw world coordinate system
@@ -310,14 +313,37 @@ void A2::drawWorldCoord() {
 	glm::vec4 center = vec4(0.0f, 0.0f, 0.0f, 1);
 
 	xaxis = PROJ * VIEW * xaxis;
+	xaxis = xaxis / xaxis.w;
 	yaxis = PROJ * VIEW * yaxis;
+	yaxis = yaxis / yaxis.w;
 	zaxis = PROJ * VIEW * zaxis;
+	zaxis = zaxis / zaxis.w;
 	center = PROJ * VIEW * center;
+	center = center / center.w;
 
 	setLineColour(vec3(1.0f, 0.0f, 0.0f));
-	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(xaxis.x / xaxis.w, xaxis.y / xaxis.w));
-	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(yaxis.x / yaxis.w, yaxis.y / yaxis.w));
-	drawLine(vec2(center.x / center.w, center.y / center.w), vec2(zaxis.x / zaxis.w, zaxis.y / zaxis.w));
+	drawLine(vec2(center.x, center.y), vec2(xaxis.x, xaxis.y));
+	drawLine(vec2(center.x, center.y), vec2(yaxis.x, yaxis.y));
+	drawLine(vec2(center.x, center.y), vec2(zaxis.x, zaxis.y));
+}
+
+void A2::clip(glm::vec4 A, glm::vec4 B, glm::vec4 P, glm::vec4 n) {
+	float vecA = glm::dot(A - P, n);
+	float vecB = glm::dot(B - P, n);
+	float t = vecA / (vecA - vecB);
+
+	if (vecA < 0 && vecB < 0) goto draw;
+	if (vecA >=0 && vecB >= 0) return;
+
+	if (vecA > 0) A = A + t * (B - A);
+	else B = A + t * (B - A);
+
+	draw:
+		A = PROJ * A;
+		A = A / A.w;
+		B = PROJ * B;
+		B = B / B.w;
+		drawLine(vec2(A.x, A.y), vec2(B.x, B.y));
 }
 
 /*----------------------------------------------------------------------------------------
@@ -359,7 +385,7 @@ void A2::guiLogic()
 		}
 		ImGui::PopID();
 		ImGui::SameLine();
-		ImGui::Text("Rotate View");
+		ImGui::Text("Rotate View [O]");
 
 		ImGui::PushID(1);
 		if (ImGui::RadioButton("##TranslateView", &mode, 1)) {
@@ -367,7 +393,7 @@ void A2::guiLogic()
 		}
 		ImGui::PopID();
 		ImGui::SameLine();
-		ImGui::Text("Translate View");
+		ImGui::Text("Translate View [N]");
 
 		ImGui::PushID(2);
 		if (ImGui::RadioButton("##Perspective", &mode, 2)) {
@@ -375,7 +401,7 @@ void A2::guiLogic()
 		}
 		ImGui::PopID();
 		ImGui::SameLine();
-		ImGui::Text("Perspective");
+		ImGui::Text("Perspective [P]");
 
 		ImGui::PushID(3);
 		if (ImGui::RadioButton("##RotateModel", &mode, 3)) {
@@ -383,7 +409,7 @@ void A2::guiLogic()
 		}
 		ImGui::PopID();
 		ImGui::SameLine();
-		ImGui::Text("Rotate Model");
+		ImGui::Text("Rotate Model [R]");
 
 		ImGui::PushID(4);
 		if (ImGui::RadioButton("##TranslateModel", &mode, 4)) {
@@ -391,7 +417,7 @@ void A2::guiLogic()
 		}
 		ImGui::PopID();
 		ImGui::SameLine();
-		ImGui::Text("Translate Model");
+		ImGui::Text("Translate Model [T]");
 
 		ImGui::PushID(5);
 		if (ImGui::RadioButton("##ScaleModel", &mode, 5)) {
@@ -399,7 +425,7 @@ void A2::guiLogic()
 		}
 		ImGui::PopID();
 		ImGui::SameLine();
-		ImGui::Text("Scale Model");
+		ImGui::Text("Scale Model [S]");
 
 		ImGui::PushID(6);
 		if (ImGui::RadioButton("##Viewport", &mode, 6)) {
@@ -407,7 +433,7 @@ void A2::guiLogic()
 		}
 		ImGui::PopID();
 		ImGui::SameLine();
-		ImGui::Text("Viewport");
+		ImGui::Text("Viewport [V]");
 
 		if (ImGui::Button("Reset")) {
 			reset();
@@ -525,15 +551,17 @@ bool A2::mouseMoveEvent (
 						FOV += theta;
 						FOV = FOV < FOV_MIN ? FOV_MIN : FOV;
 						FOV = FOV > FOV_MAX ? FOV_MAX : FOV;
-						PROJ = setProj(FOV, ASPECT, FP, NP);
+						PROJ = getProj(FOV, ASPECT, FP, NP);
 						break;
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(1, 0, 0));
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
+						CMODEL = CMODEL * R * glm::inverse(CMODEL) * CMODEL;
 						break;
 					case TRANSLATE_MODEL:
 						T = glm::translate(mat4(), vec3((curMousePos.x - prevMousePos.x) * FACTOR, 0, 0));
 						MODEL = T * MODEL;
+						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
 						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(SCALE_UP, 1, 1));
@@ -542,7 +570,7 @@ bool A2::mouseMoveEvent (
 						break;
 					default:break;
 				}
-			} else
+			}
 
 			if (mouseMiddleClicked) {
 				switch (mode) {
@@ -555,13 +583,19 @@ bool A2::mouseMoveEvent (
 						VIEW = T * VIEW;
 						break;
 					case PERSPECTIVE:
+						if (curMousePos.x > prevMousePos.x) NP -= NPC;
+						else NP += NPC;
+						PROJ = getProj(FOV, ASPECT, FP, NP);
+						break;
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
+						CMODEL = CMODEL * R * glm::inverse(CMODEL) * CMODEL;
 						break;
 					case TRANSLATE_MODEL:
 						T = glm::translate(mat4(), vec3(0, (curMousePos.x - prevMousePos.x) * FACTOR, 0));
 						MODEL = T * MODEL;
+						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
 						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(1, SCALE_UP, 1));
@@ -570,7 +604,7 @@ bool A2::mouseMoveEvent (
 						break;
 					default:break;
 				}
-			} else
+			}
 
 			if (mouseRightClicked) {
 				switch (mode) {
@@ -583,13 +617,19 @@ bool A2::mouseMoveEvent (
 						VIEW = T * VIEW;
 						break;
 					case PERSPECTIVE:
+						if (curMousePos.x > prevMousePos.x) FP -= FPC;
+						else FP += FPC;
+						PROJ = getProj(FOV, ASPECT, FP, NP);
+					break;
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(0, 0, 1));
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
+						CMODEL = CMODEL * R * glm::inverse(CMODEL) * CMODEL;
 						break;
 					case TRANSLATE_MODEL:
 						T = glm::translate(mat4(), vec3(0, 0, (curMousePos.x - prevMousePos.x) * FACTOR));
 						MODEL = T * MODEL;
+						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
 						if (curMousePos.x > prevMousePos.x) S = glm::scale(mat4(), vec3(1, 1, SCALE_UP));
