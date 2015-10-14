@@ -48,7 +48,9 @@ bool mouseLeftClicked = false;
 bool mouseMiddleClicked = false;
 bool mouseRightClicked = false;
 
-static double scales = 1;
+static double scalex = 1;
+static double scaley = 1;
+static double scalez = 1;
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -102,13 +104,13 @@ void A2::init()
 	mode = 0;
 	ASPECT = m_windowHeight / m_windowWidth;
 	FOV = PI / 6;
-	NP = 1.0f;
-	FP = -1.0f;
+	NP = -5.0f;
+	FP = -20.0f;
 
-	vpStart = glm::vec4(10, 50, 0, 1);
-	vpWidth = 100;
-	vpHeight = 100;
-	//VP = getViewport(vpStart, vpWidth, vpHeight, FP, NP);
+	vpStart = glm::vec4(-0.9f, -0.9f, 0, 1);
+	vpWidth = 1.8f;
+	vpHeight = 1.8f;
+	VP = getViewport(vpStart, vpWidth, vpHeight, FP, NP);
 	MODEL = glm::mat4();
 	CMODEL = glm::mat4();
 	VIEW = glm::lookAt(
@@ -135,7 +137,23 @@ glm::mat4 A2::getViewport(glm::vec4 vp, float width, float height, float f, floa
 	return viewport;
 }
 
-void A2::reset() {}
+void A2::reset() {
+	mode = 0;
+	FOV = PI / 6;
+	NP = -5.0f;
+	FP = -20.0f;
+	vpStart = glm::vec4(-0.9f, -0.9f, 0, 1);
+	vpWidth = 1.8f;
+	vpHeight = 1.8f;
+	VP = getViewport(vpStart, vpWidth, vpHeight, FP, NP);
+	MODEL = glm::mat4();
+	CMODEL = glm::mat4();
+	VIEW = glm::lookAt(
+		glm::vec3(0.0f, 0.0f, 10.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f));
+	PROJ = getProj(FOV, ASPECT, FP, NP);
+}
 
 //----------------------------------------------------------------------------------------
 void A2::createShaderProgram()
@@ -261,10 +279,20 @@ void A2::drawLine(
 // draw viewport
 void A2::drawViewport() {
 	setLineColour(vec3(0.0f, 0.0f, 0.0f));
-	glm::vec4 LB = PROJ * VIEW * glm::vec4(vpStart.x, vpStart.y, 0, 1);
-	glm::vec4 LT = PROJ * VIEW * glm::vec4(vpStart.x, vpStart.y + vpHeight, 0, 1);
-	glm::vec4 RB = PROJ * VIEW * glm::vec4(vpStart.x + vpWidth, vpStart.y, 0, 1);
-	glm::vec4 RT = PROJ * VIEW * glm::vec4(vpStart.x + vpWidth, vpStart.y + vpHeight, 0, 1);
+	glm::vec4 LB = glm::vec4(-0.9f, -0.9f, 0, 1);
+	glm::vec4 LT = glm::vec4(-0.9f, 0.9f, 0, 1);
+	glm::vec4 RB = glm::vec4(0.9f, -0.9f, 0, 1);
+	glm::vec4 RT = glm::vec4(0.9f, 0.9f, 0, 1);
+
+	LB = VPMODEL * LB;
+	LT = VPMODEL * LT;
+	RB = VPMODEL * RB;
+	RT = VPMODEL * RT;
+
+	// LB = LB / LB.w;
+	// LT = LT / LT.w;
+	// RB = RB / RB.w;
+	// RT = RT / RT.w;
 
 	drawLine(vec2(LB.x, LB.y), vec2(RB.x, RB.y));
 	drawLine(vec2(LB.x, LB.y), vec2(LT.x, LT.y));
@@ -281,33 +309,35 @@ void A2::drawCube() {
 
 	// near plane
 	P = glm::vec4(0.0f, 0.0f, NP, 1.0f);
-	n = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+	n = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
 	plane nearPlane = {P, n};
+	planes.push_back(nearPlane);
 
-	// far plane
+	//far plane
 	P = glm::vec4(0.0f, 0.0f, FP, 1.0f);
 	n = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
 	plane farPlane = {P, n};
+	planes.push_back(farPlane);
 
-	// // left plane
-	// P = glm::vec4(-1.0f, 0.0f, 0.0f, 1.0f);
-	// n = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-	// planes.push_back({P, n});
-	//
-	// // right plane
-	// P = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	// n = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-	// planes.push_back({P, n});
-	//
-	// // top plane
-	// P = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	// n = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-	// planes.push_back({P, n});
-	//
-	// // bottom plane
-	// P = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
-	// n = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-	// planes.push_back({P, n});
+	// left plane
+	P = glm::vec4(-1.0f, 0.0f, 0.0f, 1.0f);
+	n = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	planes.push_back({P, n});
+
+	// right plane
+	P = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	n = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
+	planes.push_back({P, n});
+
+	// top plane
+	P = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	n = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
+	planes.push_back({P, n});
+
+	// bottom plane
+	P = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
+	n = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	planes.push_back({P, n});
 
 	int l = 0;
 	for (int i = -1; i < 2; i += 2) {
@@ -337,30 +367,10 @@ void A2::drawCube() {
 	lines.push_back({cube[4], cube[6]});
 	lines.push_back({cube[5], cube[7]});
 
-	lines = clip(lines, nearPlane);
-	lines = clip(lines, farPlane);
-
 	for (int i = 0; i < lines.size(); i++) {
-		A = lines[i].A;
-		B = lines[i].B;
-		A = PROJ * A;
-		B = PROJ * B;
-		A = A / A.w;
-		B = B / B.w;
-		lines[i] = {A, B};
+		clip(lines[i], planes);
 	}
 
-	// for (int i = 0; i < planes.size(); i++) {
-	// 	lines = clip(lines, planes[i]);
-	// }
-
-	for (int i = 0; i < lines.size(); i++) {
-		A = lines[i].A;
-		B = lines[i].B;
-		A = VP * A;
-		B = VP * B;
-		drawLine(vec2(A.x, A.y), vec2(B.x, B.y));
-	}
 }
 
 // draw model coordinate system
@@ -381,7 +391,9 @@ void A2::drawModelCoord() {
 
 	setLineColour(vec3(0.0f, 0.0f, 1.0f));
 	drawLine(vec2(center.x, center.y), vec2(xaxis.x, xaxis.y));
+	setLineColour(vec3(1.0f, 0.0f, 1.0f));
 	drawLine(vec2(center.x, center.y), vec2(yaxis.x, yaxis.y));
+	setLineColour(vec3(0.5f, 0.5f, 0.5f));
 	drawLine(vec2(center.x, center.y), vec2(zaxis.x, zaxis.y));
 }
 
@@ -403,33 +415,48 @@ void A2::drawWorldCoord() {
 
 	setLineColour(vec3(1.0f, 0.0f, 0.0f));
 	drawLine(vec2(center.x, center.y), vec2(xaxis.x, xaxis.y));
+	setLineColour(vec3(0.3f, 0.2f, 0.4f));
 	drawLine(vec2(center.x, center.y), vec2(yaxis.x, yaxis.y));
+	setLineColour(vec3(0.5f, 0.2f, 0.0f));
 	drawLine(vec2(center.x, center.y), vec2(zaxis.x, zaxis.y));
 }
 
-vector<line> A2::clip(vector<line> lines, plane plane) {
-	vector<line> newLines;
+void A2::clip(line line, vector<plane> planes) {
 	float dotA, dotB, t;
 	glm::vec4 A, B;
+	A = line.A;
+	B = line.B;
 
-	for (int i = 0; i < lines.size(); i++) {
-		A = lines[i].A;
-		B = lines[i].B;
-
-		dotA = glm::dot(A - plane.P, plane.n);
-		dotB = glm::dot(B - plane.P, plane.n);
+	for (int i = 0; i < 2; i++) {
+		dotA = glm::dot(A - planes[i].P, planes[i].n);
+		dotB = glm::dot(B - planes[i].P, planes[i].n);
 		t = dotA / (dotA - dotB);
 
-		if (dotA < 0 && dotB < 0) goto add;
+		if (dotA < 0 && dotB < 0) return;
 		if (dotA >=0 && dotB >= 0) continue;
 
-		if (dotA > 0) A = A + t * (B - A);
+		if (dotA < 0) A = A + t * (B - A);
 		else B = A + t * (B - A);
-
-		add: newLines.push_back(lines[i]);
 	}
 
-	return newLines;
+	A = PROJ * A;
+	B = PROJ * B;
+	A = A / A.w;
+	B = B / B.w;
+
+	for (int i = 2; i < planes.size(); i++) {
+		dotA = glm::dot(A - planes[i].P, planes[i].n);
+		dotB = glm::dot(B - planes[i].P, planes[i].n);
+		t = dotA / (dotA - dotB);
+
+		if (dotA < 0 && dotB < 0) return;
+		if (dotA >=0 && dotB >= 0) continue;
+
+		if (dotA < 0) A = A + t * (B - A);
+		else B = A + t * (B - A);
+	}
+
+	drawLine(vec2(A.x, A.y), vec2(B.x, B.y));
 }
 
 /*----------------------------------------------------------------------------------------
@@ -521,6 +548,9 @@ void A2::guiLogic()
 		ImGui::PopID();
 		ImGui::SameLine();
 		ImGui::Text("Viewport [V]");
+
+		ImGui::Text("FAR PLANE: %f", FP);
+		ImGui::Text("NEAR PLANE: %f", NP);
 
 		if (ImGui::Button("Reset")) {
 			reset();
@@ -651,13 +681,13 @@ bool A2::mouseMoveEvent (
 						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
-						if (curMousePos.x > prevMousePos.x && scales * SCALE_UP < SCALE_MAX_LIMIT) {
+						if (curMousePos.x > prevMousePos.x && scalex * SCALE_UP < SCALE_MAX_LIMIT) {
 							S = glm::scale(mat4(), vec3(SCALE_UP, 1, 1));
-							scales *= SCALE_UP;
+							scalex *= SCALE_UP;
 						}
-						if (curMousePos.x < prevMousePos.x && scales * SCALE_DOWN > SCALE_MIN_LIMIT) {
+						if (curMousePos.x < prevMousePos.x && scalex * SCALE_DOWN > SCALE_MIN_LIMIT) {
 							S = glm::scale(mat4(), vec3(SCALE_DOWN, 1, 1));
-							scales *= SCALE_DOWN;
+							scalex *= SCALE_DOWN;
 						}
 						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
 						break;
@@ -680,8 +710,7 @@ bool A2::mouseMoveEvent (
 						VIEW = T * VIEW;
 						break;
 					case PERSPECTIVE:
-						if (curMousePos.x > prevMousePos.x) NP -= NPC;
-						else NP += NPC;
+						NP -= (curMousePos.x - prevMousePos.x) * FACTOR;
 						PROJ = getProj(FOV, ASPECT, FP, NP);
 						break;
 					case ROTATE_MODEL:
@@ -695,14 +724,14 @@ bool A2::mouseMoveEvent (
 						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
-					if (curMousePos.x > prevMousePos.x && scales * SCALE_UP < SCALE_MAX_LIMIT) {
-						S = glm::scale(mat4(), vec3(1, SCALE_UP, 1));
-						scales *= SCALE_UP;
-					}
-					if (curMousePos.x < prevMousePos.x && scales * SCALE_DOWN > SCALE_MIN_LIMIT) {
-						S = glm::scale(mat4(), vec3(1, SCALE_DOWN, 1));
-						scales *= SCALE_DOWN;
-					}
+						if (curMousePos.x > prevMousePos.x && scaley * SCALE_UP < SCALE_MAX_LIMIT) {
+							S = glm::scale(mat4(), vec3(1, SCALE_UP, 1));
+							scaley *= SCALE_UP;
+						}
+						if (curMousePos.x < prevMousePos.x && scaley * SCALE_DOWN > SCALE_MIN_LIMIT) {
+							S = glm::scale(mat4(), vec3(1, SCALE_DOWN, 1));
+							scaley *= SCALE_DOWN;
+						}
 						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
 						break;
 					default:break;
@@ -720,10 +749,9 @@ bool A2::mouseMoveEvent (
 						VIEW = T * VIEW;
 						break;
 					case PERSPECTIVE:
-						if (curMousePos.x > prevMousePos.x) FP -= FPC;
-						else FP += FPC;
+						FP -= (curMousePos.x - prevMousePos.x) * FACTOR;
 						PROJ = getProj(FOV, ASPECT, FP, NP);
-					break;
+						break;
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(0, 0, 1));
 						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
@@ -735,14 +763,14 @@ bool A2::mouseMoveEvent (
 						CMODEL = T * CMODEL;
 						break;
 					case SCALE_MODEL:
-					if (curMousePos.x > prevMousePos.x && scales * SCALE_UP < SCALE_MAX_LIMIT) {
-						S = glm::scale(mat4(), vec3(1, 1, SCALE_UP));
-						scales *= SCALE_UP;
-					}
-					if (curMousePos.x < prevMousePos.x && scales * SCALE_DOWN > SCALE_MIN_LIMIT) {
-						S = glm::scale(mat4(), vec3(1, 1, SCALE_DOWN));
-						scales *= SCALE_DOWN;
-					}
+						if (curMousePos.x > prevMousePos.x && scalez * SCALE_UP < SCALE_MAX_LIMIT) {
+							S = glm::scale(mat4(), vec3(1, 1, SCALE_UP));
+							scalez *= SCALE_UP;
+						}
+						if (curMousePos.x < prevMousePos.x && scalez * SCALE_DOWN > SCALE_MIN_LIMIT) {
+							S = glm::scale(mat4(), vec3(1, 1, SCALE_DOWN));
+							scalez *= SCALE_DOWN;
+						}
 						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
 						break;
 					default:break;
@@ -835,7 +863,37 @@ bool A2::keyInputEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (action == GLFW_PRESS) {
+		switch (key) {
+			case GLFW_KEY_Q:
+				glfwSetWindowShouldClose(m_window, GL_TRUE);
+				break;
+			case GLFW_KEY_A:
+				reset();
+				break;
+			case GLFW_KEY_O:
+				mode = ROTATE_VIEW;
+				break;
+			case GLFW_KEY_N:
+				mode = TRANSLATE_VIEW;
+				break;
+			case GLFW_KEY_P:
+				mode = PERSPECTIVE;
+				break;
+			case GLFW_KEY_R:
+				mode = ROTATE_MODEL;
+				break;
+			case GLFW_KEY_T:
+				mode = TRANSLATE_MODEL;
+				break;
+			case GLFW_KEY_S:
+				mode = SCALE_MODEL;
+				break;
+			case GLFW_KEY_V:
+				mode = VIEWPORT;
+				break;
+		}
+	}
 
 	return eventHandled;
 }

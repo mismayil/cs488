@@ -76,7 +76,7 @@ protected:
 	void drawWorldCoord();
 	glm::mat4 getProj(float fov, float aspect, float f, float n);
 	glm::mat4 getViewport(glm::vec4 vp, float width, float height, float f, float n);
-	std::vector<line> clip(std::vector<line> lines, plane plane);
+	void clip(line line, std::vector<plane> planes);
 
 	ShaderProgram m_shader;
 
@@ -90,6 +90,7 @@ protected:
 	int mode;
 
 	glm::mat4 VP;
+	glm::mat4 VPMODEL;
 	glm::mat4 PROJ;
 	glm::mat4 VIEW;
 	glm::mat4 MODEL;
