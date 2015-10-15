@@ -85,7 +85,7 @@ A2::~A2()
 void A2::init()
 {
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	glEnable(GL_LINE_SMOOTH);
+	//glEnable(GL_LINE_SMOOTH);
 
 
 	// Set the background colour.
@@ -658,11 +658,11 @@ bool A2::mouseMoveEvent (
 				switch (mode) {
 					case ROTATE_VIEW:
 						R = glm::rotate(mat4(), (float) -theta, vec3(1, 0, 0));
-						VIEW = VIEW * R * glm::inverse(VIEW) * VIEW;
+						VIEW *= R;
 						break;
 					case TRANSLATE_VIEW:
 						T = glm::translate(mat4(), vec3(-(curMousePos.x - prevMousePos.x) * FACTOR, 0, 0));
-						VIEW = T * VIEW;
+						VIEW *= T;
 						break;
 					case PERSPECTIVE:
 						FOV += theta;
@@ -672,13 +672,13 @@ bool A2::mouseMoveEvent (
 						break;
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(1, 0, 0));
-						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
-						CMODEL = CMODEL * R * glm::inverse(CMODEL) * CMODEL;
+						MODEL *= R;
+						CMODEL *= R;
 						break;
 					case TRANSLATE_MODEL:
 						T = glm::translate(mat4(), vec3((curMousePos.x - prevMousePos.x) * FACTOR, 0, 0));
-						MODEL = T * MODEL;
-						CMODEL = T * CMODEL;
+						MODEL *= T;
+						CMODEL *= T;
 						break;
 					case SCALE_MODEL:
 						if (curMousePos.x > prevMousePos.x && scalex * SCALE_UP < SCALE_MAX_LIMIT) {
@@ -689,7 +689,7 @@ bool A2::mouseMoveEvent (
 							S = glm::scale(mat4(), vec3(SCALE_DOWN, 1, 1));
 							scalex *= SCALE_DOWN;
 						}
-						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
+						MODEL *= S;
 						break;
 					case VIEWPORT:
 						vpWidth = curMousePos.x - vpStart.x;
@@ -703,11 +703,11 @@ bool A2::mouseMoveEvent (
 				switch (mode) {
 					case ROTATE_VIEW:
 						R = glm::rotate(mat4(), (float) -theta, vec3(0, 1, 0));
-						VIEW = VIEW * R * glm::inverse(VIEW) * VIEW;
+						VIEW *= R;
 						break;
 					case TRANSLATE_VIEW:
 						T = glm::translate(mat4(), vec3(0, -(curMousePos.x - prevMousePos.x) * FACTOR, 0));
-						VIEW = T * VIEW;
+						VIEW *= T;
 						break;
 					case PERSPECTIVE:
 						NP -= (curMousePos.x - prevMousePos.x) * FACTOR;
@@ -715,13 +715,13 @@ bool A2::mouseMoveEvent (
 						break;
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(0, 1, 0));
-						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
-						CMODEL = CMODEL * R * glm::inverse(CMODEL) * CMODEL;
+						MODEL *= R;
+						CMODEL *= R;
 						break;
 					case TRANSLATE_MODEL:
 						T = glm::translate(mat4(), vec3(0, (curMousePos.x - prevMousePos.x) * FACTOR, 0));
-						MODEL = T * MODEL;
-						CMODEL = T * CMODEL;
+						MODEL *= T;
+						CMODEL *= T;
 						break;
 					case SCALE_MODEL:
 						if (curMousePos.x > prevMousePos.x && scaley * SCALE_UP < SCALE_MAX_LIMIT) {
@@ -732,7 +732,7 @@ bool A2::mouseMoveEvent (
 							S = glm::scale(mat4(), vec3(1, SCALE_DOWN, 1));
 							scaley *= SCALE_DOWN;
 						}
-						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
+						MODEL *= S;
 						break;
 					default:break;
 				}
@@ -742,11 +742,11 @@ bool A2::mouseMoveEvent (
 				switch (mode) {
 					case ROTATE_VIEW:
 						R = glm::rotate(mat4(), (float) -theta, vec3(0, 0, 1));
-						VIEW = VIEW * R * glm::inverse(VIEW) * VIEW;
+						VIEW *= R;
 						break;
 					case TRANSLATE_VIEW:
 						T = glm::translate(mat4(), vec3(0, 0, -(curMousePos.x - prevMousePos.x) * FACTOR));
-						VIEW = T * VIEW;
+						VIEW *= T;
 						break;
 					case PERSPECTIVE:
 						FP -= (curMousePos.x - prevMousePos.x) * FACTOR;
@@ -754,13 +754,13 @@ bool A2::mouseMoveEvent (
 						break;
 					case ROTATE_MODEL:
 						R = glm::rotate(mat4(), (float) theta, vec3(0, 0, 1));
-						MODEL = MODEL * R * glm::inverse(MODEL) * MODEL;
-						CMODEL = CMODEL * R * glm::inverse(CMODEL) * CMODEL;
+						MODEL *= R;
+						CMODEL *= R;
 						break;
 					case TRANSLATE_MODEL:
 						T = glm::translate(mat4(), vec3(0, 0, (curMousePos.x - prevMousePos.x) * FACTOR));
-						MODEL = T * MODEL;
-						CMODEL = T * CMODEL;
+						MODEL *= T;
+						CMODEL *= T;
 						break;
 					case SCALE_MODEL:
 						if (curMousePos.x > prevMousePos.x && scalez * SCALE_UP < SCALE_MAX_LIMIT) {
@@ -771,7 +771,7 @@ bool A2::mouseMoveEvent (
 							S = glm::scale(mat4(), vec3(1, 1, SCALE_DOWN));
 							scalez *= SCALE_DOWN;
 						}
-						MODEL = MODEL * S * glm::inverse(MODEL) * MODEL;
+						MODEL *= S;
 						break;
 					default:break;
 				}
