@@ -23,12 +23,12 @@ ifeq ($(config),debug)
   OBJDIR     = Debug/cs488-framework
   TARGETDIR  = ../lib
   TARGET     = $(TARGETDIR)/libcs488-framework.a
-  DEFINES   += 
+  DEFINES   += -DDEBUG
   INCLUDES  += -I../shared -I../shared/gl3w -I../shared/imgui -I../shared/include
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
-  CFLAGS    += $(CPPFLAGS) $(ARCH) -std=c++11
+  CFLAGS    += $(CPPFLAGS) $(ARCH) -g -std=c++11
   CXXFLAGS  += $(CFLAGS) 
-  LDFLAGS   += -s
+  LDFLAGS   += 
   LIBS      += 
   RESFLAGS  += $(DEFINES) $(INCLUDES) 
   LDDEPS    += 
@@ -45,10 +45,10 @@ ifeq ($(config),release)
   OBJDIR     = Release/cs488-framework
   TARGETDIR  = ../lib
   TARGET     = $(TARGETDIR)/libcs488-framework.a
-  DEFINES   += 
+  DEFINES   += -DNDEBUG
   INCLUDES  += -I../shared -I../shared/gl3w -I../shared/imgui -I../shared/include
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
-  CFLAGS    += $(CPPFLAGS) $(ARCH) -std=c++11
+  CFLAGS    += $(CPPFLAGS) $(ARCH) -O2 -std=c++11
   CXXFLAGS  += $(CFLAGS) 
   LDFLAGS   += -s
   LIBS      += 
@@ -64,9 +64,11 @@ ifeq ($(config),release)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/CS488Window.o \
-	$(OBJDIR)/GlErrorCheck.o \
 	$(OBJDIR)/ShaderProgram.o \
+	$(OBJDIR)/GlErrorCheck.o \
+	$(OBJDIR)/MeshConsolidator.o \
+	$(OBJDIR)/ObjFileDecoder.o \
+	$(OBJDIR)/CS488Window.o \
 
 RESOURCES := \
 
@@ -127,13 +129,19 @@ $(GCH): $(PCH)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 endif
 
-$(OBJDIR)/CS488Window.o: ../shared/cs488-framework/CS488Window.cpp
+$(OBJDIR)/ShaderProgram.o: ../shared/cs488-framework/ShaderProgram.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 $(OBJDIR)/GlErrorCheck.o: ../shared/cs488-framework/GlErrorCheck.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-$(OBJDIR)/ShaderProgram.o: ../shared/cs488-framework/ShaderProgram.cpp
+$(OBJDIR)/MeshConsolidator.o: ../shared/cs488-framework/MeshConsolidator.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+$(OBJDIR)/ObjFileDecoder.o: ../shared/cs488-framework/ObjFileDecoder.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+$(OBJDIR)/CS488Window.o: ../shared/cs488-framework/CS488Window.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 

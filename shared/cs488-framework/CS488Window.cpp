@@ -71,6 +71,7 @@ void CS488Window::windowResizeCallBack (
 		int width,
 		int height
 ) {
+	getInstance()->CS488Window::windowResizeEvent(width, height);
 	getInstance()->windowResizeEvent(width, height);
 }
 
@@ -148,6 +149,9 @@ bool CS488Window::windowResizeEvent (
 		int width,
 		int height
 ) {
+	m_windowWidth = width;
+	m_windowHeight = height;
+
 	return false;
 }
 
