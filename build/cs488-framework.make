@@ -64,11 +64,11 @@ ifeq ($(config),release)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/ShaderProgram.o \
+	$(OBJDIR)/CS488Window.o \
 	$(OBJDIR)/GlErrorCheck.o \
+	$(OBJDIR)/ShaderProgram.o \
 	$(OBJDIR)/MeshConsolidator.o \
 	$(OBJDIR)/ObjFileDecoder.o \
-	$(OBJDIR)/CS488Window.o \
 
 RESOURCES := \
 
@@ -129,19 +129,19 @@ $(GCH): $(PCH)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 endif
 
-$(OBJDIR)/ShaderProgram.o: ../shared/cs488-framework/ShaderProgram.cpp
+$(OBJDIR)/CS488Window.o: ../shared/cs488-framework/CS488Window.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 $(OBJDIR)/GlErrorCheck.o: ../shared/cs488-framework/GlErrorCheck.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+$(OBJDIR)/ShaderProgram.o: ../shared/cs488-framework/ShaderProgram.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 $(OBJDIR)/MeshConsolidator.o: ../shared/cs488-framework/MeshConsolidator.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 $(OBJDIR)/ObjFileDecoder.o: ../shared/cs488-framework/ObjFileDecoder.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-$(OBJDIR)/CS488Window.o: ../shared/cs488-framework/CS488Window.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 

@@ -10,6 +10,8 @@
 #include <glm/glm.hpp>
 #include <memory>
 
+class GeometryNode;
+
 struct LightSource {
 	glm::vec3 position;
 	glm::vec3 rgbIntensity;
@@ -47,9 +49,10 @@ protected:
 
 	void initPerspectiveMatrix();
 	void uploadCommonSceneUniforms();
-	void renderSceneGraph(const SceneNode &node);
+	void renderSceneGraph(SceneNode &node);
 	void renderArcCircle();
 
+	void traverse(SceneNode *node, const glm::mat4 T);
 	glm::mat4 m_perpsective;
 	glm::mat4 m_view;
 

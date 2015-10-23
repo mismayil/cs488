@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SceneNode.hpp"
+#include "A3.hpp"
 
 class GeometryNode : public SceneNode {
 public:

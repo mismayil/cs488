@@ -95,12 +95,12 @@ void A3::processLuaSceneFile(const std::string & filename) {
 	// This version of the code treats the Lua file as an Asset,
 	// so that you'd launch the program with just the filename
 	// of a puppet in the Assets/ directory.
-	// std::string assetFilePath = getAssetFilePath(filename.c_str());
-	// m_rootNode = std::shared_ptr<SceneNode>(import_lua(assetFilePath));
+	std::string assetFilePath = getAssetFilePath(filename.c_str());
+	m_rootNode = std::shared_ptr<SceneNode>(import_lua(assetFilePath));
 
 	// This version of the code treats the main program argument
 	// as a straightforward pathname.
-	m_rootNode = std::shared_ptr<SceneNode>(import_lua(filename));
+	//m_rootNode = std::shared_ptr<SceneNode>(import_lua(filename));
 	if (!m_rootNode) {
 		std::cerr << "Could not open " << filename << std::endl;
 	}
@@ -394,8 +394,35 @@ void A3::draw() {
 	renderArcCircle();
 }
 
+void A3::traverse(SceneNode *node, const glm::mat4 T) {
+
+	for (SceneNode *child : node->children) {
+		traverse(child, T * node->get_transform());
+	}
+
+	if (node->m_nodeType != NodeType::GeometryNode) return;
+
+	glm::mat4 tmp = node->get_transform();
+
+	node->set_transform(T * node->get_transform());
+
+	const GeometryNode *geometryNode = static_cast<const GeometryNode *>(node);
+
+	updateShaderUniforms(m_shader, *geometryNode, m_view);
+
+	// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
+	BatchInfo batchInfo = m_batchInfoMap[geometryNode->meshId];
+
+	//-- Now render the mesh:
+	m_shader.enable();
+	glDrawArrays(GL_TRIANGLES, batchInfo.startIndex, batchInfo.numIndices);
+	m_shader.disable();
+
+	node->set_transform(tmp);
+}
+
 //----------------------------------------------------------------------------------------
-void A3::renderSceneGraph(const SceneNode & root) {
+void A3::renderSceneGraph(SceneNode & root) {
 
 	// Bind the VAO once here, and reuse for all GeometryNode rendering below.
 	glBindVertexArray(m_vao_meshData);
@@ -413,24 +440,25 @@ void A3::renderSceneGraph(const SceneNode & root) {
 	// could put a set of mutually recursive functions in this class, which
 	// walk down the tree from nodes of different types.
 
-	for (const SceneNode * node : root.children) {
-
-		if (node->m_nodeType != NodeType::GeometryNode)
-			continue;
-
-		const GeometryNode * geometryNode = static_cast<const GeometryNode *>(node);
-
-		updateShaderUniforms(m_shader, *geometryNode, m_view);
-
-
-		// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
-		BatchInfo batchInfo = m_batchInfoMap[geometryNode->meshId];
-
-		//-- Now render the mesh:
-		m_shader.enable();
-		glDrawArrays(GL_TRIANGLES, batchInfo.startIndex, batchInfo.numIndices);
-		m_shader.disable();
-	}
+	traverse(&root, mat4());
+	// for (const SceneNode * node : root.children) {
+	//
+	// 	if (node->m_nodeType != NodeType::GeometryNode)
+	// 		continue;
+	//
+	// 	const GeometryNode * geometryNode = static_cast<const GeometryNode *>(node);
+	//
+	// 	updateShaderUniforms(m_shader, *geometryNode, m_view);
+	//
+	//
+	// 	// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
+	// 	BatchInfo batchInfo = m_batchInfoMap[geometryNode->meshId];
+	//
+	// 	//-- Now render the mesh:
+	// 	m_shader.enable();
+	// 	glDrawArrays(GL_TRIANGLES, batchInfo.startIndex, batchInfo.numIndices);
+	// 	m_shader.disable();
+	// }
 
 	glBindVertexArray(0);
 	CHECK_GL_ERRORS;
