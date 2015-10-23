@@ -2,6 +2,8 @@
 -- A simplified puppet without posable joints, but that
 -- looks roughly humanoid.
 
+PI = 3.14159265359
+
 rootnode = gr.node('root')
 rootnode:rotate('y', -20.0)
 rootnode:scale( 0.25, 0.25, 0.25 )
@@ -17,8 +19,11 @@ rootnode:add_child(torso)
 torso:set_material(white)
 torso:scale(0.5,1.0,0.5);
 
+j_torso_head = gr.joint('j_torso_head', {-PI/4, 0, PI/4}, {-PI/2, 0, PI/2})
+torso:add_child(j_torso_head)
+
 head = gr.mesh('cube', 'head')
-torso:add_child(head)
+j_torso_head:add_child(head)
 head:scale(1.0/0.5, 1.0, 1.0/0.5)
 head:scale(0.4, 0.4, 0.4)
 head:translate(0.0, 0.9, 0.0)

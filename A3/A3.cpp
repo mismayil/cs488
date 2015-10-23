@@ -6,6 +6,8 @@ using namespace std;
 #include "cs488-framework/MathUtils.hpp"
 #include "GeometryNode.hpp"
 #include "JointNode.hpp"
+#include "GeometryCommand.hpp"
+#include <map>
 
 #include <imgui/imgui.h>
 
@@ -18,6 +20,12 @@ using namespace glm;
 static bool show_gui = true;
 
 const size_t CIRCLE_PTS = 48;
+
+#define PI 3.14159265359
+
+vector<Command*> commands;
+Command *cur_command;
+map<unsigned int, mat4> matrices;
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -103,7 +111,18 @@ void A3::processLuaSceneFile(const std::string & filename) {
 	//m_rootNode = std::shared_ptr<SceneNode>(import_lua(filename));
 	if (!m_rootNode) {
 		std::cerr << "Could not open " << filename << std::endl;
+		return;
 	}
+	SceneNode *root = &(*m_rootNode);
+	GeometryNode *geometryNode = static_cast<GeometryNode *>(root);
+	mat4 T = glm::translate(mat4(), vec3(0.5f, 0.0f, 0.0f));
+	mat4 R = glm::rotate(mat4(), (float) PI / 4, vec3(0.0f, 1.0f, 0.0f));
+	mat4 S = glm::scale(mat4(), vec3(2.0f, 1.0f, 1.0f));
+	Command *command = new GeometryCommand(*geometryNode, S);
+	commands.push_back(command);
+	cur_command = command;
+	if (matrices.find(geometryNode->m_nodeId) == matrices.end()) matrices.insert(pair<unsigned int, mat4>(geometryNode->m_nodeId, T * S * R));
+	else matrices[geometryNode->m_nodeId] *= S;
 }
 
 //----------------------------------------------------------------------------------------
@@ -392,31 +411,32 @@ void A3::draw() {
 	renderArcCircle();
 }
 
-void A3::traverse(SceneNode *node, const glm::mat4 T) {
+void A3::traverse(SceneNode *node, const mat4 P) {
+
+	mat4 O = node->get_transform(); 		// old matrix
+	mat4 T; 								// current matrix
+	if (matrices.find(node->m_nodeId) != matrices.end()) T = matrices[node->m_nodeId];
+	node->set_transform(P * O * T);
 
 	for (SceneNode *child : node->children) {
-		traverse(child, T * node->get_transform());
+		traverse(child, node->get_transform());
 	}
 
-	if (node->m_nodeType != NodeType::GeometryNode) return;
+	if (node->m_nodeType == NodeType::GeometryNode) {
+		const GeometryNode *geometryNode = static_cast<const GeometryNode *>(node);
 
-	glm::mat4 old = node->get_transform();
+		updateShaderUniforms(m_shader, *geometryNode, m_view);
 
-	node->set_transform(T * node->get_transform());
+		// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
+		BatchInfo batchInfo = m_batchInfoMap[geometryNode->meshId];
 
-	const GeometryNode *geometryNode = static_cast<const GeometryNode *>(node);
+		//-- Now render the mesh:
+		m_shader.enable();
+		glDrawArrays(GL_TRIANGLES, batchInfo.startIndex, batchInfo.numIndices);
+		m_shader.disable();
+	}
 
-	updateShaderUniforms(m_shader, *geometryNode, m_view);
-
-	// Get the BatchInfo corresponding to the GeometryNode's unique MeshId.
-	BatchInfo batchInfo = m_batchInfoMap[geometryNode->meshId];
-
-	//-- Now render the mesh:
-	m_shader.enable();
-	glDrawArrays(GL_TRIANGLES, batchInfo.startIndex, batchInfo.numIndices);
-	m_shader.disable();
-
-	node->set_transform(old);
+	node->set_transform(O);
 }
 
 //----------------------------------------------------------------------------------------
@@ -437,8 +457,7 @@ void A3::renderSceneGraph(SceneNode & root) {
 	// subclasses, that renders the subtree rooted at every node.  Or you
 	// could put a set of mutually recursive functions in this class, which
 	// walk down the tree from nodes of different types.
-
-	traverse(&root, mat4());
+	traverse(&root, glm::mat4());
 	// for (const SceneNode * node : root.children) {
 	//
 	// 	if (node->m_nodeType != NodeType::GeometryNode)
