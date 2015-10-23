@@ -388,8 +388,6 @@ void A3::draw() {
 
 	glEnable( GL_DEPTH_TEST );
 	renderSceneGraph(*m_rootNode);
-
-
 	glDisable( GL_DEPTH_TEST );
 	renderArcCircle();
 }
@@ -402,7 +400,7 @@ void A3::traverse(SceneNode *node, const glm::mat4 T) {
 
 	if (node->m_nodeType != NodeType::GeometryNode) return;
 
-	glm::mat4 tmp = node->get_transform();
+	glm::mat4 old = node->get_transform();
 
 	node->set_transform(T * node->get_transform());
 
@@ -418,7 +416,7 @@ void A3::traverse(SceneNode *node, const glm::mat4 T) {
 	glDrawArrays(GL_TRIANGLES, batchInfo.startIndex, batchInfo.numIndices);
 	m_shader.disable();
 
-	node->set_transform(tmp);
+	node->set_transform(old);
 }
 
 //----------------------------------------------------------------------------------------
