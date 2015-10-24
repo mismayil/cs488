@@ -46,7 +46,7 @@ bool mouseMiddleClicked = false;
 bool mouseRightClicked = false;
 
 mat4 TMP;    // current matrix transformation
-int ttype;	// current transformation type
+int ttype;   // current trans type
 
 int PICKING_MODE = 0;
 
@@ -56,16 +56,15 @@ unsigned int last_command = 0;
 mat4 vAxisRotMatrix(float fVecX, float fVecY, float fVecZ);
 vec4 vCalcRotVec(float fNewX, float fNewY, float fOldX, float fOldY, float fDiameter);
 
-void A3::updateNode(SceneNode *node, unsigned int id, mat4 T, int type) {
-	if (node->m_nodeId == id) {
-		if (type == TRANSLATE) node->set_transform(T * node->get_transform());
-		else node->set_transform(node->get_transform() * T);
-		return;
-	} else {
-		for (SceneNode *child : node->children) {
-			updateNode(child, id, T, type);
-		}
+SceneNode* A3::getNode(SceneNode *node, unsigned int id) {
+	if (node->m_nodeId == id) return node;
+
+	for (SceneNode *child : node->children) {
+		SceneNode* tmp = getNode(child, id);
+		if (tmp != NULL) return tmp;
 	}
+
+	return NULL;
 }
 
 void A3::add_command(unsigned int id, mat4 T, int type) {
@@ -78,13 +77,26 @@ void A3::add_command(unsigned int id, mat4 T, int type) {
 void A3::undo() {
 	if (commands.empty()) return;
 	last_command--;
-	updateNode(m_rootNode, commands[last_command].id, inverse(commands[last_command].T), commands[last_command].type);
+	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
+	if (commands[last_command].type == TRANSLATE) node->set_transform(inverse(commands[last_command].T) * node->get_transform());
+	else node->set_transform(node->get_transform() * inverse(commands[last_command].T));
 }
 
 void A3::redo() {
 	if (commands.empty() || last_command+1 > commands.size()) return;
-	updateNode(m_rootNode, commands[last_command].id, commands[last_command].T, commands[last_command].type);
+	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
+	if (commands[last_command].type == TRANSLATE) node->set_transform(inverse(commands[last_command].T) * node->get_transform());
+	else node->set_transform(node->get_transform() * inverse(commands[last_command].T));
 	last_command++;
+}
+
+void A3::set_picking_mode(int mode) {
+	m_shader.enable();
+	PICKING_MODE = mode;
+	GLint picking = m_shader.getUniformLocation("picking");
+	glUniform1i(picking, PICKING_MODE);
+	CHECK_GL_ERRORS;
+	m_shader.disable();
 }
 
 //----------------------------------------------------------------------------------------
@@ -503,9 +515,9 @@ static void updateShaderUniforms(
 		glUniform1f(location, node.material.shininess);
 		CHECK_GL_ERRORS;
 
-		// -- Set node ids
+		// -- Set node id
 		GLint id = shader.getUniformLocation("id");
-		glUniform1i(id, node.m_nodeId);
+		glUniform1f(id, node.m_nodeId);
 		CHECK_GL_ERRORS;
 
 	}
@@ -663,12 +675,9 @@ bool A3::mouseMoveEvent (
 					case POSITION:
 						T = translate(mat4(), vec3((curMousePos.x - prevMousePos.x) * FACTOR, -(curMousePos.y - prevMousePos.y) * FACTOR, 0));
 						ttype = TRANSLATE;
-						updateNode(m_rootNode, m_rootNode->m_nodeId, T, ttype);
+						m_rootNode->set_transform(T * m_rootNode->get_transform());
 						break;
 					case JOINT:
-						float *pixel = new float;
-						glReadPixels(xPos, m_windowHeight - yPos, 1, 1, GL_RED, GL_FLOAT, pixel);
-						cout << *pixel * 10 << endl;
 						break;
 				}
 			}
@@ -678,7 +687,7 @@ bool A3::mouseMoveEvent (
 					case POSITION:
 						T = translate(mat4(), vec3(0, 0, -(curMousePos.y - prevMousePos.y) * FACTOR));
 						ttype = TRANSLATE;
-						updateNode(m_rootNode, m_rootNode->m_nodeId, T, ttype);
+						m_rootNode->set_transform(T * m_rootNode->get_transform());
 						break;
 					case JOINT:break;
 				}
@@ -695,7 +704,7 @@ bool A3::mouseMoveEvent (
 						newAxis = vCalcRotVec(newPos.x, newPos.y, oldPos.x, oldPos.y, diameter);
 						R = vAxisRotMatrix(newAxis.x, newAxis.y, newAxis.z);
 						ttype = ROTATE_SCALE;
-						updateNode(m_rootNode, m_rootNode->m_nodeId, R, ttype);
+						m_rootNode->set_transform(m_rootNode->get_transform() * R);
 						break;
 				}
 			}
@@ -729,12 +738,15 @@ bool A3::mouseButtonInputEvent (
 			if (button == GLFW_MOUSE_BUTTON_LEFT) {
 				mouseLeftClicked = true;
 				if (mode == JOINT) {
-					m_shader.enable();
-					PICKING_MODE = 1;
-					GLint picking = m_shader.getUniformLocation("picking");
-					glUniform1i(picking, PICKING_MODE);
-					CHECK_GL_ERRORS;
-					m_shader.disable();
+					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+					set_picking_mode(1);
+					glEnable(GL_DEPTH_TEST);
+					renderSceneGraph(*m_rootNode);
+					glDisable(GL_DEPTH_TEST);
+					unsigned char *pixel = new unsigned char;
+					glReadPixels(xpos, m_windowHeight - ypos, 1, 1, GL_BLUE, GL_UNSIGNED_BYTE, (void *)pixel);
+					unsigned int nodeId = (unsigned int) *pixel;
+					set_picking_mode(0);
 				}
 			}
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = true;

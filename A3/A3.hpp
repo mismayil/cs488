@@ -53,10 +53,11 @@ protected:
 	void renderArcCircle();
 
 	void traverse(SceneNode *node, const glm::mat4 T);
-	void updateNode(SceneNode *node, unsigned int id, glm::mat4 T, int type);
+	SceneNode* getNode(SceneNode *node, unsigned int id);
 	void add_command(unsigned int id, glm::mat4 T, int type);
 	void undo();
 	void redo();
+	void set_picking_mode(int mode);
 
 	glm::mat4 m_perpsective;
 	glm::mat4 m_view;
