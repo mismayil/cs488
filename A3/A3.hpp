@@ -53,7 +53,7 @@ protected:
 	void renderArcCircle();
 
 	void traverse(SceneNode *node, const glm::mat4 T);
-	void updateNode(unsigned int id, glm::mat4 T, int type);
+	void updateNode(SceneNode *node, unsigned int id, glm::mat4 T, int type);
 	void add_command(unsigned int id, glm::mat4 T, int type);
 	void undo();
 	void redo();
@@ -85,5 +85,6 @@ protected:
 
 	std::string m_luaSceneFile;
 
-	std::shared_ptr<SceneNode> m_rootNode;
+	// std::shared_ptr<SceneNode> m_rootNode;
+	SceneNode *m_rootNode;
 };

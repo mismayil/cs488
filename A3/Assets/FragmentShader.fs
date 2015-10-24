@@ -13,6 +13,8 @@ in VsOutFsIn {
 
 
 out vec4 fragColour;
+uniform int id;
+uniform int picking = 0;
 
 struct Material {
     vec3 kd;
@@ -53,5 +55,6 @@ vec3 phongModel(vec3 fragPosition, vec3 fragNormal) {
 }
 
 void main() {
-	fragColour = vec4(phongModel(fs_in.position_ES, fs_in.normal_ES), 1.0);
+    if (picking == 1) fragColour = vec4(id * 0.1, 0, 0, 1.0);
+	else fragColour = vec4(phongModel(fs_in.position_ES, fs_in.normal_ES), 1.0);
 }

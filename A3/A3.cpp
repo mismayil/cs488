@@ -48,23 +48,22 @@ bool mouseRightClicked = false;
 mat4 TMP;    // current matrix transformation
 int ttype;	// current transformation type
 
+int PICKING_MODE = 0;
+
 vector<command> commands;
 unsigned int last_command = 0;
 
 mat4 vAxisRotMatrix(float fVecX, float fVecY, float fVecZ);
 vec4 vCalcRotVec(float fNewX, float fNewY, float fOldX, float fOldY, float fDiameter);
 
-void A3::updateNode(unsigned int id, mat4 T, int type) {
-
-	if (m_rootNode->m_nodeId == id) {
-		if (type == TRANSLATE) m_rootNode->set_transform(T * m_rootNode->get_transform());
-		else m_rootNode->set_transform(m_rootNode->get_transform() * T);
-	} else
-	for (SceneNode *node : m_rootNode->children) {
-		if (node->m_nodeId == id) {
-			if (type == TRANSLATE) node->set_transform(T * node->get_transform());
-			else node->set_transform(node->get_transform() * T);
-			break;
+void A3::updateNode(SceneNode *node, unsigned int id, mat4 T, int type) {
+	if (node->m_nodeId == id) {
+		if (type == TRANSLATE) node->set_transform(T * node->get_transform());
+		else node->set_transform(node->get_transform() * T);
+		return;
+	} else {
+		for (SceneNode *child : node->children) {
+			updateNode(child, id, T, type);
 		}
 	}
 }
@@ -79,12 +78,12 @@ void A3::add_command(unsigned int id, mat4 T, int type) {
 void A3::undo() {
 	if (commands.empty()) return;
 	last_command--;
-	updateNode(commands[last_command].id, inverse(commands[last_command].T), commands[last_command].type);
+	updateNode(m_rootNode, commands[last_command].id, inverse(commands[last_command].T), commands[last_command].type);
 }
 
 void A3::redo() {
 	if (commands.empty() || last_command+1 > commands.size()) return;
-	updateNode(commands[last_command].id, commands[last_command].T, commands[last_command].type);
+	updateNode(m_rootNode, commands[last_command].id, commands[last_command].T, commands[last_command].type);
 	last_command++;
 }
 
@@ -99,7 +98,7 @@ A3::A3(const std::string & luaSceneFile)
 	  m_vbo_vertexNormals(0),
 	  m_vao_arcCircle(0),
 	  m_vbo_arcCircle(0),
-	  mode(0)
+	  mode(POSITION)
 {
 
 }
@@ -167,8 +166,8 @@ void A3::processLuaSceneFile(const std::string & filename) {
 	// so that you'd launch the program with just the filename
 	// of a puppet in the Assets/ directory.
 	std::string assetFilePath = getAssetFilePath(filename.c_str());
-	m_rootNode = std::shared_ptr<SceneNode>(import_lua(assetFilePath));
-
+	//m_rootNode = std::shared_ptr<SceneNode>(import_lua(assetFilePath));
+	m_rootNode = (SceneNode *)(import_lua(assetFilePath));
 	// This version of the code treats the main program argument
 	// as a straightforward pathname.
 	//m_rootNode = std::shared_ptr<SceneNode>(import_lua(filename));
@@ -396,10 +395,68 @@ void A3::guiLogic()
 	ImGui::Begin("Properties", &showDebugWindow, ImVec2(100,100), opacity,
 			windowFlags);
 
+			if (ImGui::BeginMenu("Application")) {
+				if (ImGui::MenuItem("Reset Position [I]")) {
 
-		// Add more gui elements here here ...
+				}
+				if (ImGui::MenuItem("Reset Orientation [O]")) {
 
+				}
+				if (ImGui::MenuItem("Reset Joints [N]")) {
 
+				}
+				if (ImGui::MenuItem("Reset All [A]")) {
+
+				}
+				if (ImGui::MenuItem("Quit [Q]")) {
+
+				}
+				ImGui::EndMenu();
+			}
+			//ImGui::SameLine();
+
+			if (ImGui::BeginMenu("Edit")) {
+				if (ImGui::MenuItem("Undo [U]")) {
+					undo();
+				}
+				if (ImGui::MenuItem("Redo [R]")) {
+					redo();
+				}
+				ImGui::EndMenu();
+			}
+			//ImGui::SameLine();
+
+			if (ImGui::BeginMenu("Options")) {
+				if (ImGui::MenuItem("Circle [C]")) {
+
+				}
+				if (ImGui::MenuItem("Z-buffer [Z]")) {
+
+				}
+				if (ImGui::MenuItem("Backface culling [B]")) {
+
+				}
+				if (ImGui::MenuItem("Frontface culling [F]")) {
+
+				}
+				ImGui::EndMenu();
+			}
+
+			ImGui::PushID(0);
+			if (ImGui::RadioButton("##Position", &mode, 0)) {
+
+			}
+			ImGui::PopID();
+			ImGui::SameLine();
+			ImGui::Text("Position/Orientation [P]");
+
+			ImGui::PushID(1);
+			if (ImGui::RadioButton("##Joint", &mode, 1)) {
+
+			}
+			ImGui::PopID();
+			ImGui::SameLine();
+			ImGui::Text("Joints [J]");
 		// Create Button, and check if it was clicked:
 		if( ImGui::Button( "Quit Application" ) ) {
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
@@ -444,6 +501,11 @@ static void updateShaderUniforms(
 		CHECK_GL_ERRORS;
 		location = shader.getUniformLocation("material.shininess");
 		glUniform1f(location, node.material.shininess);
+		CHECK_GL_ERRORS;
+
+		// -- Set node ids
+		GLint id = shader.getUniformLocation("id");
+		glUniform1i(id, node.m_nodeId);
 		CHECK_GL_ERRORS;
 
 	}
@@ -593,7 +655,7 @@ bool A3::mouseMoveEvent (
 			glfwGetWindowSize(m_window, &width, &height);
 			vec4 center = vec4((float)width / 2.0f, (float)height / 2.0f, 0.0f, 1.0f);
 			vec4 curMousePos = vec4((float)xPos, (float)yPos, 0.0f, 1.0f);
-			double theta = -(curMousePos.x - prevMousePos.x) * PI / m_windowWidth;
+			double theta = (curMousePos.x - prevMousePos.x) * PI / m_windowWidth;
 			mat4 R, T, S;
 
 			if (mouseLeftClicked) {
@@ -601,9 +663,12 @@ bool A3::mouseMoveEvent (
 					case POSITION:
 						T = translate(mat4(), vec3((curMousePos.x - prevMousePos.x) * FACTOR, -(curMousePos.y - prevMousePos.y) * FACTOR, 0));
 						ttype = TRANSLATE;
-						updateNode(m_rootNode->m_nodeId, T, ttype);
+						updateNode(m_rootNode, m_rootNode->m_nodeId, T, ttype);
 						break;
 					case JOINT:
+						float *pixel = new float;
+						glReadPixels(xPos, m_windowHeight - yPos, 1, 1, GL_RED, GL_FLOAT, pixel);
+						cout << *pixel * 10 << endl;
 						break;
 				}
 			}
@@ -613,7 +678,7 @@ bool A3::mouseMoveEvent (
 					case POSITION:
 						T = translate(mat4(), vec3(0, 0, -(curMousePos.y - prevMousePos.y) * FACTOR));
 						ttype = TRANSLATE;
-						updateNode(m_rootNode->m_nodeId, T, ttype);
+						updateNode(m_rootNode, m_rootNode->m_nodeId, T, ttype);
 						break;
 					case JOINT:break;
 				}
@@ -630,7 +695,7 @@ bool A3::mouseMoveEvent (
 						newAxis = vCalcRotVec(newPos.x, newPos.y, oldPos.x, oldPos.y, diameter);
 						R = vAxisRotMatrix(newAxis.x, newAxis.y, newAxis.z);
 						ttype = ROTATE_SCALE;
-						updateNode(m_rootNode->m_nodeId, R, ttype);
+						updateNode(m_rootNode, m_rootNode->m_nodeId, R, ttype);
 						break;
 				}
 			}
@@ -661,7 +726,17 @@ bool A3::mouseButtonInputEvent (
 			double xpos, ypos;
 			glfwGetCursorPos(m_window, &xpos, &ypos);
 			prevMousePos = vec4((float) xpos, (float) ypos, 0.0f, 1.0f);
-			if (button == GLFW_MOUSE_BUTTON_LEFT) mouseLeftClicked = true;
+			if (button == GLFW_MOUSE_BUTTON_LEFT) {
+				mouseLeftClicked = true;
+				if (mode == JOINT) {
+					m_shader.enable();
+					PICKING_MODE = 1;
+					GLint picking = m_shader.getUniformLocation("picking");
+					glUniform1i(picking, PICKING_MODE);
+					CHECK_GL_ERRORS;
+					m_shader.disable();
+				}
+			}
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = true;
 			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = true;
 		}
@@ -847,24 +922,4 @@ mat4 vAxisRotMatrix(float fVecX, float fVecY, float fVecZ) {
 		vec4(fNewVecX*fNewVecZ*dT - fNewVecY*dSinAlpha, fNewVecY*fNewVecZ*dT + dSinAlpha*fNewVecX, dCosAlpha + fNewVecZ*fNewVecZ*dT, 0),
 		vec4(0, 0, 0, 1)
 	);
-
-    // mNewMat[0][0] = dCosAlpha + fNewVecX*fNewVecX*dT;
-    // mNewMat[0][1] = fNewVecX*fNewVecY*dT + fNewVecZ*dSinAlpha;
-    // mNewMat[0][2] = fNewVecX*fNewVecZ*dT - fNewVecY*dSinAlpha;
-    // mNewMat[0][3] = 0;
-	//
-    // mNewMat[1][0] = fNewVecX*fNewVecY*dT - dSinAlpha*fNewVecZ;
-    // mNewMat[1][1] = dCosAlpha + fNewVecY*fNewVecY*dT;
-    // mNewMat[1][2] = fNewVecY*fNewVecZ*dT + dSinAlpha*fNewVecX;
-    // mNewMat[1][3] = 0;
-	//
-    // mNewMat[2][0] = fNewVecZ*fNewVecX*dT + dSinAlpha*fNewVecY;
-    // mNewMat[2][1] = fNewVecZ*fNewVecY*dT - dSinAlpha*fNewVecX;
-    // mNewMat[2][2] = dCosAlpha + fNewVecZ*fNewVecZ*dT;
-    // mNewMat[2][3] = 0;
-	//
-    // mNewMat[3][0] = 0;
-    // mNewMat[3][1] = 0;
-    // mNewMat[3][2] = 0;
-    // mNewMat[3][3] = 1;
 }
