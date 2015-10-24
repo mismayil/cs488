@@ -6,7 +6,7 @@ using namespace std;
 #include "cs488-framework/MathUtils.hpp"
 #include "GeometryNode.hpp"
 #include "JointNode.hpp"
-#include "GeometryCommand.hpp"
+//#include "GeometryCommand.hpp"
 #include <map>
 
 #include <imgui/imgui.h>
@@ -21,11 +21,72 @@ static bool show_gui = true;
 
 const size_t CIRCLE_PTS = 48;
 
-#define PI 3.14159265359
+#define PI 				3.14159265359
+#define FACTOR 			(double) 2 / m_windowWidth
 
-vector<Command*> commands;
-Command *cur_command;
-map<unsigned int, mat4> matrices;
+enum modes {
+	POSITION,
+	JOINT
+};
+
+enum trans_types {
+	TRANSLATE,
+	ROTATE_SCALE
+};
+
+struct command {
+	unsigned int id;
+	int type;
+	mat4 T;
+};
+
+vec4 prevMousePos, onClickMousePos;
+bool mouseLeftClicked = false;
+bool mouseMiddleClicked = false;
+bool mouseRightClicked = false;
+
+mat4 TMP;    // current matrix transformation
+int ttype;	// current transformation type
+
+vector<command> commands;
+unsigned int last_command = 0;
+
+mat4 vAxisRotMatrix(float fVecX, float fVecY, float fVecZ);
+vec4 vCalcRotVec(float fNewX, float fNewY, float fOldX, float fOldY, float fDiameter);
+
+void A3::updateNode(unsigned int id, mat4 T, int type) {
+
+	if (m_rootNode->m_nodeId == id) {
+		if (type == TRANSLATE) m_rootNode->set_transform(T * m_rootNode->get_transform());
+		else m_rootNode->set_transform(m_rootNode->get_transform() * T);
+	} else
+	for (SceneNode *node : m_rootNode->children) {
+		if (node->m_nodeId == id) {
+			if (type == TRANSLATE) node->set_transform(T * node->get_transform());
+			else node->set_transform(node->get_transform() * T);
+			break;
+		}
+	}
+}
+
+void A3::add_command(unsigned int id, mat4 T, int type) {
+	struct command cmd = {id, type, T};
+	commands.resize(last_command);
+	commands.push_back(cmd);
+	last_command++;
+}
+
+void A3::undo() {
+	if (commands.empty()) return;
+	last_command--;
+	updateNode(commands[last_command].id, inverse(commands[last_command].T), commands[last_command].type);
+}
+
+void A3::redo() {
+	if (commands.empty() || last_command+1 > commands.size()) return;
+	updateNode(commands[last_command].id, commands[last_command].T, commands[last_command].type);
+	last_command++;
+}
 
 //----------------------------------------------------------------------------------------
 // Constructor
@@ -37,7 +98,8 @@ A3::A3(const std::string & luaSceneFile)
 	  m_vbo_vertexPositions(0),
 	  m_vbo_vertexNormals(0),
 	  m_vao_arcCircle(0),
-	  m_vbo_arcCircle(0)
+	  m_vbo_arcCircle(0),
+	  mode(0)
 {
 
 }
@@ -91,6 +153,7 @@ void A3::init()
 
 	initLightSources();
 
+	add_command(m_rootNode->m_nodeId, mat4(), TRANSLATE);
 
 	// Exiting the current scope calls delete automatically on meshConsolidator freeing
 	// all vertex data resources.  This is fine since we already copied this data to
@@ -111,18 +174,7 @@ void A3::processLuaSceneFile(const std::string & filename) {
 	//m_rootNode = std::shared_ptr<SceneNode>(import_lua(filename));
 	if (!m_rootNode) {
 		std::cerr << "Could not open " << filename << std::endl;
-		return;
 	}
-	SceneNode *root = &(*m_rootNode);
-	GeometryNode *geometryNode = static_cast<GeometryNode *>(root);
-	mat4 T = glm::translate(mat4(), vec3(0.5f, 0.0f, 0.0f));
-	mat4 R = glm::rotate(mat4(), (float) PI / 4, vec3(0.0f, 1.0f, 0.0f));
-	mat4 S = glm::scale(mat4(), vec3(2.0f, 1.0f, 1.0f));
-	Command *command = new GeometryCommand(*geometryNode, S);
-	commands.push_back(command);
-	cur_command = command;
-	if (matrices.find(geometryNode->m_nodeId) == matrices.end()) matrices.insert(pair<unsigned int, mat4>(geometryNode->m_nodeId, T * S * R));
-	else matrices[geometryNode->m_nodeId] *= S;
 }
 
 //----------------------------------------------------------------------------------------
@@ -414,9 +466,7 @@ void A3::draw() {
 void A3::traverse(SceneNode *node, const mat4 P) {
 
 	mat4 O = node->get_transform(); 		// old matrix
-	mat4 T; 								// current matrix
-	if (matrices.find(node->m_nodeId) != matrices.end()) T = matrices[node->m_nodeId];
-	node->set_transform(P * O * T);
+	node->set_transform(P * O);
 
 	for (SceneNode *child : node->children) {
 		traverse(child, node->get_transform());
@@ -536,7 +586,61 @@ bool A3::mouseMoveEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (!ImGui::IsMouseHoveringAnyWindow()) {
+
+		if (mouseLeftClicked || mouseMiddleClicked || mouseRightClicked) {
+			int width, height;
+			glfwGetWindowSize(m_window, &width, &height);
+			vec4 center = vec4((float)width / 2.0f, (float)height / 2.0f, 0.0f, 1.0f);
+			vec4 curMousePos = vec4((float)xPos, (float)yPos, 0.0f, 1.0f);
+			double theta = -(curMousePos.x - prevMousePos.x) * PI / m_windowWidth;
+			mat4 R, T, S;
+
+			if (mouseLeftClicked) {
+				switch (mode) {
+					case POSITION:
+						T = translate(mat4(), vec3((curMousePos.x - prevMousePos.x) * FACTOR, -(curMousePos.y - prevMousePos.y) * FACTOR, 0));
+						ttype = TRANSLATE;
+						updateNode(m_rootNode->m_nodeId, T, ttype);
+						break;
+					case JOINT:
+						break;
+				}
+			}
+
+			if (mouseMiddleClicked) {
+				switch (mode) {
+					case POSITION:
+						T = translate(mat4(), vec3(0, 0, -(curMousePos.y - prevMousePos.y) * FACTOR));
+						ttype = TRANSLATE;
+						updateNode(m_rootNode->m_nodeId, T, ttype);
+						break;
+					case JOINT:break;
+				}
+			}
+
+			if (mouseRightClicked) {
+				switch (mode) {
+					case POSITION:
+						vec4 center = vec4(m_windowWidth / 2, m_windowHeight / 2, 0, 1);
+						vec4 newPos = curMousePos - center;
+						vec4 oldPos = prevMousePos - center;
+						float diameter = m_framebufferWidth / 2 < m_framebufferHeight / 2 ? m_framebufferWidth / 2: m_framebufferHeight / 2;
+						vec4 newAxis;
+						newAxis = vCalcRotVec(newPos.x, newPos.y, oldPos.x, oldPos.y, diameter);
+						R = vAxisRotMatrix(newAxis.x, newAxis.y, newAxis.z);
+						ttype = ROTATE_SCALE;
+						updateNode(m_rootNode->m_nodeId, R, ttype);
+						break;
+				}
+			}
+
+			TMP *= T;
+			prevMousePos = curMousePos;
+		}
+	}
+
+	eventHandled = true;
 
 	return eventHandled;
 }
@@ -552,7 +656,29 @@ bool A3::mouseButtonInputEvent (
 ) {
 	bool eventHandled(false);
 
-	// Fill in with event handling code...
+	if (!ImGui::IsMouseHoveringAnyWindow()) {
+		if (actions == GLFW_PRESS) {
+			double xpos, ypos;
+			glfwGetCursorPos(m_window, &xpos, &ypos);
+			prevMousePos = vec4((float) xpos, (float) ypos, 0.0f, 1.0f);
+			if (button == GLFW_MOUSE_BUTTON_LEFT) mouseLeftClicked = true;
+			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = true;
+			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = true;
+		}
+		if (actions == GLFW_RELEASE) {
+			if (button == GLFW_MOUSE_BUTTON_LEFT) {
+				mouseLeftClicked = false;
+				add_command(m_rootNode->m_nodeId, TMP, ttype);
+			}
+			if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
+				mouseMiddleClicked = false;
+				add_command(m_rootNode->m_nodeId, TMP, ttype);
+			}
+			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = false;
+		}
+	}
+
+	eventHandled = true;
 
 	return eventHandled;
 }
@@ -605,4 +731,140 @@ bool A3::keyInputEvent (
 	// Fill in with event handling code...
 
 	return eventHandled;
+}
+
+vec4 vCalcRotVec(float fNewX, float fNewY,
+                 float fOldX, float fOldY,
+                 float fDiameter) {
+   long  nXOrigin, nYOrigin;
+   float fNewVecX, fNewVecY, fNewVecZ,        /* Vector corresponding to new mouse location */
+         fOldVecX, fOldVecY, fOldVecZ,        /* Vector corresponding to old mouse location */
+         fLength;
+
+   /* Vector pointing from center of virtual trackball to
+    * new mouse position
+    */
+   fNewVecX    = fNewX * 2.0 / fDiameter;
+   fNewVecY    = fNewY * 2.0 / fDiameter;
+   fNewVecZ    = (1.0 - fNewVecX * fNewVecX - fNewVecY * fNewVecY);
+
+   /* If the Z component is less than 0, the mouse point
+    * falls outside of the trackball which is interpreted
+    * as rotation about the Z axis.
+    */
+   if (fNewVecZ < 0.0) {
+      fLength = sqrt(1.0 - fNewVecZ);
+      fNewVecZ  = 0.0;
+      fNewVecX /= fLength;
+      fNewVecY /= fLength;
+   } else {
+      fNewVecZ = sqrt(fNewVecZ);
+   }
+
+   /* Vector pointing from center of virtual trackball to
+    * old mouse position
+    */
+   fOldVecX    = fOldX * 2.0 / fDiameter;
+   fOldVecY    = fOldY * 2.0 / fDiameter;
+   fOldVecZ    = (1.0 - fOldVecX * fOldVecX - fOldVecY * fOldVecY);
+
+   /* If the Z component is less than 0, the mouse point
+    * falls outside of the trackball which is interpreted
+    * as rotation about the Z axis.
+    */
+   if (fOldVecZ < 0.0) {
+      fLength = sqrt(1.0 - fOldVecZ);
+      fOldVecZ  = 0.0;
+      fOldVecX /= fLength;
+      fOldVecY /= fLength;
+   } else {
+      fOldVecZ = sqrt(fOldVecZ);
+   }
+
+   /* Generate rotation vector by calculating cross product:
+    *
+    * fOldVec x fNewVec.
+    *
+    * The rotation vector is the axis of rotation
+    * and is non-unit length since the length of a crossproduct
+    * is related to the angle between fOldVec and fNewVec which we need
+    * in order to perform the rotation.
+    */
+   // *fVecX = fOldVecY * fNewVecZ - fNewVecY * fOldVecZ;
+   // *fVecY = fOldVecZ * fNewVecX - fNewVecZ * fOldVecX;
+   // *fVecZ = fOldVecX * fNewVecY - fNewVecX * fOldVecY;
+   return vec4(
+	   fOldVecY * fNewVecZ - fNewVecY * fOldVecZ,
+	   fOldVecZ * fNewVecX - fNewVecZ * fOldVecX,
+	   fOldVecX * fNewVecY - fNewVecX * fOldVecY,
+	   0
+   );
+}
+
+/*******************************************************
+ * void vAxisRotMatrix(float fVecX, float fVecY, float fVecZ, Matrix mNewMat)
+ *
+ *    Calculate the rotation matrix for rotation about an arbitrary axis.
+ *
+ *    The axis of rotation is specified by (fVecX,fVecY,fVecZ). The length
+ *    of the vector is the amount to rotate by.
+ *
+ * Parameters: fVecX,fVecY,fVecZ - Axis of rotation
+ *             mNewMat - Output matrix of rotation in column-major format
+ *                       (ie, translation components are in column 3 on rows
+ *                       0,1, and 2).
+ *
+ *******************************************************/
+mat4 vAxisRotMatrix(float fVecX, float fVecY, float fVecZ) {
+    float fRadians, fInvLength, fNewVecX, fNewVecY, fNewVecZ;
+
+    /* Find the length of the vector which is the angle of rotation
+     * (in radians)
+     */
+    fRadians = sqrt(fVecX * fVecX + fVecY * fVecY + fVecZ * fVecZ);
+
+    /* If the vector has zero length - return the identity matrix */
+    if (fRadians > -0.000001 && fRadians < 0.000001) {
+        return mat4();
+    }
+
+    /* Normalize the rotation vector now in preparation for making
+     * rotation matrix.
+     */
+    fInvLength = 1 / fRadians;
+    fNewVecX   = fVecX * fInvLength;
+    fNewVecY   = fVecY * fInvLength;
+    fNewVecZ   = fVecZ * fInvLength;
+
+    /* Create the arbitrary axis rotation matrix */
+    double dSinAlpha = sin(fRadians);
+    double dCosAlpha = cos(fRadians);
+    double dT = 1 - dCosAlpha;
+
+	return mat4(
+		vec4(dCosAlpha + fNewVecX*fNewVecX*dT, fNewVecX*fNewVecY*dT - dSinAlpha*fNewVecZ, fNewVecZ*fNewVecX*dT + dSinAlpha*fNewVecY, 0),
+		vec4(fNewVecX*fNewVecY*dT + fNewVecZ*dSinAlpha, dCosAlpha + fNewVecY*fNewVecY*dT, fNewVecZ*fNewVecY*dT - dSinAlpha*fNewVecX, 0),
+		vec4(fNewVecX*fNewVecZ*dT - fNewVecY*dSinAlpha, fNewVecY*fNewVecZ*dT + dSinAlpha*fNewVecX, dCosAlpha + fNewVecZ*fNewVecZ*dT, 0),
+		vec4(0, 0, 0, 1)
+	);
+
+    // mNewMat[0][0] = dCosAlpha + fNewVecX*fNewVecX*dT;
+    // mNewMat[0][1] = fNewVecX*fNewVecY*dT + fNewVecZ*dSinAlpha;
+    // mNewMat[0][2] = fNewVecX*fNewVecZ*dT - fNewVecY*dSinAlpha;
+    // mNewMat[0][3] = 0;
+	//
+    // mNewMat[1][0] = fNewVecX*fNewVecY*dT - dSinAlpha*fNewVecZ;
+    // mNewMat[1][1] = dCosAlpha + fNewVecY*fNewVecY*dT;
+    // mNewMat[1][2] = fNewVecY*fNewVecZ*dT + dSinAlpha*fNewVecX;
+    // mNewMat[1][3] = 0;
+	//
+    // mNewMat[2][0] = fNewVecZ*fNewVecX*dT + dSinAlpha*fNewVecY;
+    // mNewMat[2][1] = fNewVecZ*fNewVecY*dT - dSinAlpha*fNewVecX;
+    // mNewMat[2][2] = dCosAlpha + fNewVecZ*fNewVecZ*dT;
+    // mNewMat[2][3] = 0;
+	//
+    // mNewMat[3][0] = 0;
+    // mNewMat[3][1] = 0;
+    // mNewMat[3][2] = 0;
+    // mNewMat[3][3] = 1;
 }
