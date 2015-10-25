@@ -61,12 +61,15 @@ leftShoulder:scale(0.2, 0.2, 0.2)
 leftShoulder:translate(-0.4, 0.35, 0.0)
 leftShoulder:set_material(blue)
 
+j_torso_leftArm = gr.joint('j_torso_leftArm', {-PI/4, 0, PI/4}, {-PI/2, 0, PI/2})
+leftShoulder:add_child(j_torso_leftArm)
+
 leftArm = gr.mesh('cube', 'leftArm')
-torso:add_child(leftArm)
-leftArm:scale(1/0.5, 1.0, 1/0.5);
-leftArm:scale(0.4, 0.1, 0.1)
+j_torso_leftArm:add_child(leftArm)
+leftArm:scale(4.0, 1.0, 1.0);
+--leftArm:scale(0.4, 0.3, 0.3)
 leftArm:rotate('z', 50);
-leftArm:translate(-0.8, 0.0, 0.0)
+leftArm:translate(-1.0, -1.0, 0.0)
 leftArm:set_material(red)
 
 rightShoulder = gr.mesh('sphere', 'rightShoulder')
@@ -76,12 +79,15 @@ rightShoulder:scale(0.2, 0.2, 0.2)
 rightShoulder:translate(0.4, 0.35, 0.0)
 rightShoulder:set_material(blue)
 
+j_torso_rightArm = gr.joint('j_torso_rightArm', {-PI/4, 0, PI/4}, {-PI/2, 0, PI/2})
+rightShoulder:add_child(j_torso_rightArm)
+
 rightArm = gr.mesh('cube', 'rightArm')
-torso:add_child(rightArm)
-rightArm:scale(1/0.5,1.0,1/0.5);
-rightArm:scale(0.4, 0.1, 0.1)
+j_torso_rightArm:add_child(rightArm)
+rightArm:scale(4.0,1.0,1.0);
+--rightArm:scale(0.4, 0.1, 0.1)
 rightArm:rotate('z', -50);
-rightArm:translate(0.8, 0.0, 0.0)
+rightArm:translate(1.0, -1.0, 0.0)
 rightArm:set_material(red)
 
 leftHip = gr.mesh('sphere', 'leftHip')

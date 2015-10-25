@@ -29,6 +29,11 @@ enum modes {
 	JOINT
 };
 
+bool CIRCLE = false;
+bool Z_BUFFER = true;
+bool BACKFACE_CULLING = false;
+bool FRONTFACE_CULLING = false;
+
 enum trans_types {
 	TRANSLATE,
 	ROTATE_SCALE
@@ -48,10 +53,9 @@ bool mouseRightClicked = false;
 mat4 TMP;    // current matrix transformation
 int ttype;   // current trans type
 
-int PICKING_MODE = 0;
-
 vector<command> commands;
-unsigned int last_command = 0;
+unsigned int last_command = -1;
+vector<unsigned int> selected_nodes;
 
 mat4 vAxisRotMatrix(float fVecX, float fVecY, float fVecZ);
 vec4 vCalcRotVec(float fNewX, float fNewY, float fOldX, float fOldY, float fDiameter);
@@ -61,40 +65,58 @@ SceneNode* A3::getNode(SceneNode *node, unsigned int id) {
 
 	for (SceneNode *child : node->children) {
 		SceneNode* tmp = getNode(child, id);
-		if (tmp != NULL) return tmp;
+		if (tmp) return tmp;
 	}
 
 	return NULL;
 }
 
+JointNode* getJNode(SceneNode *node, unsigned int id) {
+	if (node->m_nodeType == NodeType::JointNode) {
+		for (SceneNode *child : node->children) {
+			if (child->m_nodeId == id) return static_cast<JointNode *>(node);
+		}
+	} else {
+		for (SceneNode *child : node->children) {
+			JointNode *tmp = getJNode(child, id);
+			if (tmp) return tmp;
+		}
+	}
+	return NULL;
+}
+
 void A3::add_command(unsigned int id, mat4 T, int type) {
 	struct command cmd = {id, type, T};
-	commands.resize(last_command);
+	cout << commands.size() << endl;
+	commands.resize(last_command+1);
 	commands.push_back(cmd);
 	last_command++;
 }
 
 void A3::undo() {
-	if (commands.empty()) return;
-	last_command--;
+	cout << last_command << endl;
+	if (commands.empty() || last_command < 1) return;
 	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
+	if (!node) return;
 	if (commands[last_command].type == TRANSLATE) node->set_transform(inverse(commands[last_command].T) * node->get_transform());
 	else node->set_transform(node->get_transform() * inverse(commands[last_command].T));
+	last_command--;
 }
 
 void A3::redo() {
-	if (commands.empty() || last_command+1 > commands.size()) return;
-	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
-	if (commands[last_command].type == TRANSLATE) node->set_transform(inverse(commands[last_command].T) * node->get_transform());
-	else node->set_transform(node->get_transform() * inverse(commands[last_command].T));
+	cout << last_command << endl;
+	if (commands.empty() || last_command+1 == commands.size()) return;
 	last_command++;
+	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
+	if (!node) return;
+	if (commands[last_command].type == TRANSLATE) node->set_transform(commands[last_command].T * node->get_transform());
+	else node->set_transform(node->get_transform() * commands[last_command].T);
 }
 
 void A3::set_picking_mode(int mode) {
 	m_shader.enable();
-	PICKING_MODE = mode;
 	GLint picking = m_shader.getUniformLocation("picking");
-	glUniform1i(picking, PICKING_MODE);
+	glUniform1i(picking, mode);
 	CHECK_GL_ERRORS;
 	m_shader.disable();
 }
@@ -130,7 +152,6 @@ void A3::init()
 {
 	// Set the background colour.
 	glClearColor(0.35, 0.35, 0.35, 1.0);
-
 	createShaderProgram();
 
 	glGenVertexArrays(1, &m_vao_arcCircle);
@@ -408,19 +429,19 @@ void A3::guiLogic()
 			windowFlags);
 
 			if (ImGui::BeginMenu("Application")) {
-				if (ImGui::MenuItem("Reset Position [I]")) {
+				if (ImGui::Button("Reset Position [I]")) {
 
 				}
-				if (ImGui::MenuItem("Reset Orientation [O]")) {
+				if (ImGui::Button("Reset Orientation [O]")) {
 
 				}
-				if (ImGui::MenuItem("Reset Joints [N]")) {
+				if (ImGui::Button("Reset Joints [N]")) {
 
 				}
-				if (ImGui::MenuItem("Reset All [A]")) {
+				if (ImGui::Button("Reset All [A]")) {
 
 				}
-				if (ImGui::MenuItem("Quit [Q]")) {
+				if (ImGui::Button("Quit [Q]")) {
 
 				}
 				ImGui::EndMenu();
@@ -428,10 +449,10 @@ void A3::guiLogic()
 			//ImGui::SameLine();
 
 			if (ImGui::BeginMenu("Edit")) {
-				if (ImGui::MenuItem("Undo [U]")) {
+				if (ImGui::Button("Undo [U]")) {
 					undo();
 				}
-				if (ImGui::MenuItem("Redo [R]")) {
+				if (ImGui::Button("Redo [R]")) {
 					redo();
 				}
 				ImGui::EndMenu();
@@ -439,16 +460,16 @@ void A3::guiLogic()
 			//ImGui::SameLine();
 
 			if (ImGui::BeginMenu("Options")) {
-				if (ImGui::MenuItem("Circle [C]")) {
+				if (ImGui::Checkbox("Circle [C]", &CIRCLE)) {
 
 				}
-				if (ImGui::MenuItem("Z-buffer [Z]")) {
+				if (ImGui::Checkbox("Z-buffer [Z]", &Z_BUFFER)) {
 
 				}
-				if (ImGui::MenuItem("Backface culling [B]")) {
+				if (ImGui::Checkbox("Backface culling [B]", &BACKFACE_CULLING)) {
 
 				}
-				if (ImGui::MenuItem("Frontface culling [F]")) {
+				if (ImGui::Checkbox("Frontface culling [F]", &FRONTFACE_CULLING)) {
 
 				}
 				ImGui::EndMenu();
@@ -531,10 +552,18 @@ static void updateShaderUniforms(
  */
 void A3::draw() {
 
-	glEnable( GL_DEPTH_TEST );
+	if (Z_BUFFER) glEnable(GL_DEPTH_TEST);
+	else glDisable(GL_DEPTH_TEST);
+
+	if (BACKFACE_CULLING || FRONTFACE_CULLING) {
+		glEnable(GL_CULL_FACE);
+		if (BACKFACE_CULLING) glCullFace(GL_BACK);
+		if (FRONTFACE_CULLING) glCullFace(GL_FRONT);
+	} else glDisable(GL_CULL_FACE);
+
 	renderSceneGraph(*m_rootNode);
-	glDisable( GL_DEPTH_TEST );
-	renderArcCircle();
+
+	if (CIRCLE) renderArcCircle();
 }
 
 void A3::traverse(SceneNode *node, const mat4 P) {
@@ -667,8 +696,12 @@ bool A3::mouseMoveEvent (
 			glfwGetWindowSize(m_window, &width, &height);
 			vec4 center = vec4((float)width / 2.0f, (float)height / 2.0f, 0.0f, 1.0f);
 			vec4 curMousePos = vec4((float)xPos, (float)yPos, 0.0f, 1.0f);
-			double theta = (curMousePos.x - prevMousePos.x) * PI / m_windowWidth;
-			mat4 R, T, S;
+			double theta = (curMousePos.y - prevMousePos.y);
+			vec4 newPos = curMousePos - center;
+			vec4 oldPos = prevMousePos - center;
+			float diameter = m_framebufferWidth / 2 < m_framebufferHeight / 2 ? m_framebufferWidth / 2: m_framebufferHeight / 2;
+			vec4 newAxis;
+			mat4 T;
 
 			if (mouseLeftClicked) {
 				switch (mode) {
@@ -689,22 +722,23 @@ bool A3::mouseMoveEvent (
 						ttype = TRANSLATE;
 						m_rootNode->set_transform(T * m_rootNode->get_transform());
 						break;
-					case JOINT:break;
+					case JOINT:
+						T = rotate(mat4(), (float) theta, vec3(0.0f, 0.0f, 1.0f));
+						for (int i = 0; i < selected_nodes.size(); i++) {
+							JointNode *jnode = getJNode(m_rootNode, selected_nodes[i]);
+							jnode->rotate('z', theta);
+						}
+						break;
 				}
 			}
 
 			if (mouseRightClicked) {
 				switch (mode) {
 					case POSITION:
-						vec4 center = vec4(m_windowWidth / 2, m_windowHeight / 2, 0, 1);
-						vec4 newPos = curMousePos - center;
-						vec4 oldPos = prevMousePos - center;
-						float diameter = m_framebufferWidth / 2 < m_framebufferHeight / 2 ? m_framebufferWidth / 2: m_framebufferHeight / 2;
-						vec4 newAxis;
 						newAxis = vCalcRotVec(newPos.x, newPos.y, oldPos.x, oldPos.y, diameter);
-						R = vAxisRotMatrix(newAxis.x, newAxis.y, newAxis.z);
+						T = vAxisRotMatrix(newAxis.x, newAxis.y, newAxis.z);
 						ttype = ROTATE_SCALE;
-						m_rootNode->set_transform(m_rootNode->get_transform() * R);
+						m_rootNode->set_transform(m_rootNode->get_transform() * T);
 						break;
 				}
 			}
@@ -732,6 +766,8 @@ bool A3::mouseButtonInputEvent (
 
 	if (!ImGui::IsMouseHoveringAnyWindow()) {
 		if (actions == GLFW_PRESS) {
+			int width, height;
+			glfwGetWindowSize(m_window, &width, &height);
 			double xpos, ypos;
 			glfwGetCursorPos(m_window, &xpos, &ypos);
 			prevMousePos = vec4((float) xpos, (float) ypos, 0.0f, 1.0f);
@@ -739,14 +775,39 @@ bool A3::mouseButtonInputEvent (
 				mouseLeftClicked = true;
 				if (mode == JOINT) {
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 					set_picking_mode(1);
+
 					glEnable(GL_DEPTH_TEST);
 					renderSceneGraph(*m_rootNode);
 					glDisable(GL_DEPTH_TEST);
-					unsigned char *pixel = new unsigned char;
-					glReadPixels(xpos, m_windowHeight - ypos, 1, 1, GL_BLUE, GL_UNSIGNED_BYTE, (void *)pixel);
-					unsigned int nodeId = (unsigned int) *pixel;
+
+					unsigned char *color = new unsigned char;
+					glReadPixels(xpos, m_windowHeight - ypos, 1, 1, GL_BLUE, GL_UNSIGNED_BYTE, (void *)color);
+					unsigned int nodeId = (unsigned int) *color;
+
 					set_picking_mode(0);
+
+					SceneNode *node = getNode(m_rootNode, nodeId);
+					if (!node) return false;
+					GeometryNode* gnode = static_cast<GeometryNode *>(node);
+
+					if (node->isSelected) {
+						node->isSelected = false;
+						gnode->material = gnode->original;
+
+						for (int i = 0; i < selected_nodes.size(); i++) {
+							if (nodeId == selected_nodes[i]) {
+								selected_nodes.erase(selected_nodes.begin()+i);
+								break;
+							}
+						}
+					} else {
+						node->isSelected = true;
+						gnode->original = gnode->material;
+						gnode->material.kd = vec3(0.0f, 0.0f, 0.0f);
+						selected_nodes.push_back(nodeId);
+					}
 				}
 			}
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = true;
@@ -756,12 +817,18 @@ bool A3::mouseButtonInputEvent (
 			if (button == GLFW_MOUSE_BUTTON_LEFT) {
 				mouseLeftClicked = false;
 				add_command(m_rootNode->m_nodeId, TMP, ttype);
+				TMP = mat4();
 			}
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
 				mouseMiddleClicked = false;
 				add_command(m_rootNode->m_nodeId, TMP, ttype);
+				TMP = mat4();
 			}
-			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = false;
+			if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+				mouseRightClicked = false;
+				add_command(m_rootNode->m_nodeId, TMP, ttype);
+				TMP = mat4();
+			}
 		}
 	}
 

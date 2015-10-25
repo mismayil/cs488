@@ -62,7 +62,7 @@ protected:
 	glm::mat4 m_perpsective;
 	glm::mat4 m_view;
 	int mode;
-
+	int i;
 	LightSource m_light;
 
 	//-- GL resources for mesh geometry data:
