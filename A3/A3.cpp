@@ -24,6 +24,8 @@ const size_t CIRCLE_PTS = 48;
 #define PI 				3.14159265359
 #define FACTOR 			(double) 2 / m_windowWidth
 
+#define HEAD_ID 3
+
 enum modes {
 	POSITION,
 	JOINT
@@ -72,29 +74,22 @@ SceneNode* A3::getNode(SceneNode *node, unsigned int id) {
 }
 
 JointNode* getJNode(SceneNode *node, unsigned int id) {
-	if (node->m_nodeType == NodeType::JointNode) {
-		for (SceneNode *child : node->children) {
-			if (child->m_nodeId == id) return static_cast<JointNode *>(node);
-		}
-	} else {
-		for (SceneNode *child : node->children) {
-			JointNode *tmp = getJNode(child, id);
-			if (tmp) return tmp;
-		}
+	for (SceneNode *child : node->children) {
+		if (child->m_nodeId == id) return static_cast<JointNode *>(node);
+		JointNode *tmp = getJNode(child, id);
+		if (tmp) return tmp;
 	}
 	return NULL;
 }
 
 void A3::add_command(unsigned int id, mat4 T, int type) {
 	struct command cmd = {id, type, T};
-	cout << commands.size() << endl;
 	commands.resize(last_command+1);
 	commands.push_back(cmd);
 	last_command++;
 }
 
 void A3::undo() {
-	cout << last_command << endl;
 	if (commands.empty() || last_command < 1) return;
 	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
 	if (!node) return;
@@ -104,7 +99,6 @@ void A3::undo() {
 }
 
 void A3::redo() {
-	cout << last_command << endl;
 	if (commands.empty() || last_command+1 == commands.size()) return;
 	last_command++;
 	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
@@ -360,7 +354,7 @@ void A3::initViewMatrix() {
 //----------------------------------------------------------------------------------------
 void A3::initLightSources() {
 	// World-space position
-	m_light.position = vec3(-2.0f, 5.0f, 0.5f);
+	m_light.position = vec3(0.0f, 0.0f, 0.0f);
 	m_light.rgbIntensity = vec3(0.8f); // White light
 }
 
@@ -725,8 +719,12 @@ bool A3::mouseMoveEvent (
 					case JOINT:
 						T = rotate(mat4(), (float) theta, vec3(0.0f, 0.0f, 1.0f));
 						for (int i = 0; i < selected_nodes.size(); i++) {
-							JointNode *jnode = getJNode(m_rootNode, selected_nodes[i]);
-							jnode->rotate('z', theta);
+							if (selected_nodes[i] != HEAD_ID) {
+								JointNode *jnode = getJNode(m_rootNode, selected_nodes[i]);
+								cout << "hey" << endl;
+								jnode->rotate('z', theta);
+								cout << "ups" << endl;
+							}
 						}
 						break;
 				}
@@ -739,6 +737,15 @@ bool A3::mouseMoveEvent (
 						T = vAxisRotMatrix(newAxis.x, newAxis.y, newAxis.z);
 						ttype = ROTATE_SCALE;
 						m_rootNode->set_transform(m_rootNode->get_transform() * T);
+						break;
+					case JOINT:
+						T = rotate(mat4(), (float) theta, vec3(0.0f, 0.0f, 1.0f));
+						for (int i = 0; i < selected_nodes.size(); i++) {
+							if (selected_nodes[i] == HEAD_ID) {
+								JointNode *jnode = getJNode(m_rootNode, selected_nodes[i]);
+								jnode->rotate('y', theta);
+							}
+						}
 						break;
 				}
 			}
