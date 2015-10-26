@@ -96,7 +96,22 @@ leftElbow:add_child(j_LeftElbow_leftBotArm)
 leftBotArm = gr.mesh('sphere', 'leftBotArm')
 j_LeftElbow_leftBotArm:add_child(leftBotArm)
 leftBotArm:scale(10.0, 3.0, 1.5)
-leftBotArm:translate(-2.0, 0.0, 0.0)
+leftBotArm:translate(-4.0, 0.0, 0.0)
 leftBotArm:set_material(blue)
+
+rightElbow = gr.mesh('sphere', 'elbow')
+rightArm:add_child(rightElbow)
+rightElbow:scale(0.1, 0.3, 0.3)
+rightElbow:translate(1.0, 0.0, 0.0)
+rightElbow:set_material(blue)
+
+j_RightElbow_rightBotArm = gr.joint('j_RightElbow_rightBotArm', {-PI/4, 0, PI/4}, {-PI/2, 0, PI/2})
+rightElbow:add_child(j_RightElbow_rightBotArm)
+
+rightBotArm = gr.mesh('sphere', 'rightBotArm')
+j_RightElbow_rightBotArm:add_child(rightBotArm)
+rightBotArm:scale(10.0, 3.0, 1.5)
+rightBotArm:translate(4.0, 0.0, 0.0)
+rightBotArm:set_material(blue)
 
 return rootnode

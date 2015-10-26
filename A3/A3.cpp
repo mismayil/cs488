@@ -6,8 +6,6 @@ using namespace std;
 #include "cs488-framework/MathUtils.hpp"
 #include "GeometryNode.hpp"
 #include "JointNode.hpp"
-//#include "GeometryCommand.hpp"
-#include <map>
 
 #include <imgui/imgui.h>
 
@@ -24,7 +22,7 @@ const size_t CIRCLE_PTS = 48;
 #define PI 				3.14159265359
 #define FACTOR 			(double) 2 / m_windowWidth
 
-#define HEAD_ID 3
+#define HEAD_JOINT_ID 3
 
 enum modes {
 	POSITION,
@@ -42,7 +40,7 @@ enum trans_types {
 };
 
 struct command {
-	unsigned int id;
+	vector<unsigned int> ids;
 	int type;
 	mat4 T;
 };
@@ -62,6 +60,7 @@ vector<unsigned int> selected_nodes;
 mat4 vAxisRotMatrix(float fVecX, float fVecY, float fVecZ);
 vec4 vCalcRotVec(float fNewX, float fNewY, float fOldX, float fOldY, float fDiameter);
 
+// get current node
 SceneNode* A3::getNode(SceneNode *node, unsigned int id) {
 	if (node->m_nodeId == id) return node;
 
@@ -73,17 +72,18 @@ SceneNode* A3::getNode(SceneNode *node, unsigned int id) {
 	return NULL;
 }
 
-JointNode* getJNode(SceneNode *node, unsigned int id) {
+// get parent node
+SceneNode* A3::getPNode(SceneNode *node, unsigned int id) {
 	for (SceneNode *child : node->children) {
-		if (child->m_nodeId == id) return static_cast<JointNode *>(node);
-		JointNode *tmp = getJNode(child, id);
+		if (child->m_nodeId == id) return node;
+		SceneNode *tmp = getPNode(child, id);
 		if (tmp) return tmp;
 	}
 	return NULL;
 }
 
-void A3::add_command(unsigned int id, mat4 T, int type) {
-	struct command cmd = {id, type, T};
+void A3::add_command(vector<unsigned int> ids, mat4 T, int type) {
+	struct command cmd = {ids, type, T};
 	commands.resize(last_command+1);
 	commands.push_back(cmd);
 	last_command++;
@@ -91,20 +91,24 @@ void A3::add_command(unsigned int id, mat4 T, int type) {
 
 void A3::undo() {
 	if (commands.empty() || last_command < 1) return;
-	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
-	if (!node) return;
-	if (commands[last_command].type == TRANSLATE) node->set_transform(inverse(commands[last_command].T) * node->get_transform());
-	else node->set_transform(node->get_transform() * inverse(commands[last_command].T));
+	for (unsigned int i = 0; i < commands[last_command].ids.size(); i++) {
+		SceneNode *node = getNode(m_rootNode, commands[last_command].ids[i]);
+		if (!node) return;
+		if (commands[last_command].type == TRANSLATE) node->set_transform(inverse(commands[last_command].T) * node->get_transform());
+		else node->set_transform(node->get_transform() * inverse(commands[last_command].T));
+	}
 	last_command--;
 }
 
 void A3::redo() {
 	if (commands.empty() || last_command+1 == commands.size()) return;
 	last_command++;
-	SceneNode *node = getNode(m_rootNode, commands[last_command].id);
-	if (!node) return;
-	if (commands[last_command].type == TRANSLATE) node->set_transform(commands[last_command].T * node->get_transform());
-	else node->set_transform(node->get_transform() * commands[last_command].T);
+	for (unsigned int i = 0; i < commands[last_command].ids.size(); i++) {
+		SceneNode *node = getNode(m_rootNode, commands[last_command].ids[i]);
+		if (!node) return;
+		if (commands[last_command].type == TRANSLATE) node->set_transform(commands[last_command].T * node->get_transform());
+		else node->set_transform(node->get_transform() * commands[last_command].T);
+	}
 }
 
 void A3::set_picking_mode(int mode) {
@@ -179,7 +183,9 @@ void A3::init()
 
 	initLightSources();
 
-	add_command(m_rootNode->m_nodeId, mat4(), TRANSLATE);
+	vector<unsigned int> ids;
+	ids.push_back(m_rootNode->m_nodeId);
+	add_command(ids, mat4(), TRANSLATE);
 
 	// Exiting the current scope calls delete automatically on meshConsolidator freeing
 	// all vertex data resources.  This is fine since we already copied this data to
@@ -551,8 +557,9 @@ void A3::draw() {
 
 	if (BACKFACE_CULLING || FRONTFACE_CULLING) {
 		glEnable(GL_CULL_FACE);
-		if (BACKFACE_CULLING) glCullFace(GL_BACK);
-		if (FRONTFACE_CULLING) glCullFace(GL_FRONT);
+		if (BACKFACE_CULLING && FRONTFACE_CULLING) glCullFace(GL_FRONT_AND_BACK);
+		else if (BACKFACE_CULLING) glCullFace(GL_BACK);
+		else if (FRONTFACE_CULLING) glCullFace(GL_FRONT);
 	} else glDisable(GL_CULL_FACE);
 
 	renderSceneGraph(*m_rootNode);
@@ -690,7 +697,7 @@ bool A3::mouseMoveEvent (
 			glfwGetWindowSize(m_window, &width, &height);
 			vec4 center = vec4((float)width / 2.0f, (float)height / 2.0f, 0.0f, 1.0f);
 			vec4 curMousePos = vec4((float)xPos, (float)yPos, 0.0f, 1.0f);
-			double theta = (curMousePos.y - prevMousePos.y);
+			double theta = (curMousePos.y - prevMousePos.y) * PI / 180;
 			vec4 newPos = curMousePos - center;
 			vec4 oldPos = prevMousePos - center;
 			float diameter = m_framebufferWidth / 2 < m_framebufferHeight / 2 ? m_framebufferWidth / 2: m_framebufferHeight / 2;
@@ -719,11 +726,10 @@ bool A3::mouseMoveEvent (
 					case JOINT:
 						T = rotate(mat4(), (float) theta, vec3(0.0f, 0.0f, 1.0f));
 						for (int i = 0; i < selected_nodes.size(); i++) {
-							if (selected_nodes[i] != HEAD_ID) {
-								JointNode *jnode = getJNode(m_rootNode, selected_nodes[i]);
-								cout << "hey" << endl;
-								jnode->rotate('z', theta);
-								cout << "ups" << endl;
+							JointNode *jnode = static_cast<JointNode *>(getNode(m_rootNode, selected_nodes[i]));
+							if (jnode->currentX + theta > jnode->m_joint_x.min && jnode->currentX + theta < jnode->m_joint_x.max) {
+								jnode->set_transform(jnode->get_transform() * T);
+								jnode->currentX += theta;
 							}
 						}
 						break;
@@ -739,12 +745,11 @@ bool A3::mouseMoveEvent (
 						m_rootNode->set_transform(m_rootNode->get_transform() * T);
 						break;
 					case JOINT:
-						T = rotate(mat4(), (float) theta, vec3(0.0f, 0.0f, 1.0f));
-						for (int i = 0; i < selected_nodes.size(); i++) {
-							if (selected_nodes[i] == HEAD_ID) {
-								JointNode *jnode = getJNode(m_rootNode, selected_nodes[i]);
-								jnode->rotate('y', theta);
-							}
+						T = rotate(mat4(), (float) theta, vec3(0.0f, 1.0f, 0.0f));
+						JointNode *jnode = static_cast<JointNode *>(getNode(m_rootNode, HEAD_JOINT_ID));
+						if (jnode->currentY + theta > jnode->m_joint_y.min && jnode->currentY + theta < jnode->m_joint_y.max) {
+							jnode->set_transform(jnode->get_transform() * T);
+							jnode->currentY += theta;
 						}
 						break;
 				}
@@ -772,12 +777,14 @@ bool A3::mouseButtonInputEvent (
 	bool eventHandled(false);
 
 	if (!ImGui::IsMouseHoveringAnyWindow()) {
+
 		if (actions == GLFW_PRESS) {
 			int width, height;
 			glfwGetWindowSize(m_window, &width, &height);
 			double xpos, ypos;
 			glfwGetCursorPos(m_window, &xpos, &ypos);
 			prevMousePos = vec4((float) xpos, (float) ypos, 0.0f, 1.0f);
+
 			if (button == GLFW_MOUSE_BUTTON_LEFT) {
 				mouseLeftClicked = true;
 				if (mode == JOINT) {
@@ -797,45 +804,73 @@ bool A3::mouseButtonInputEvent (
 
 					SceneNode *node = getNode(m_rootNode, nodeId);
 					if (!node) return false;
-					GeometryNode* gnode = static_cast<GeometryNode *>(node);
+					SceneNode *parent = getPNode(m_rootNode, nodeId);
 
-					if (node->isSelected) {
-						node->isSelected = false;
-						gnode->material = gnode->original;
+					if (parent->m_nodeType == NodeType::JointNode) {
+						GeometryNode* gnode = static_cast<GeometryNode *>(node);
+						if (node->isSelected) {
+							node->isSelected = false;
+							gnode->material = gnode->original;
 
-						for (int i = 0; i < selected_nodes.size(); i++) {
-							if (nodeId == selected_nodes[i]) {
-								selected_nodes.erase(selected_nodes.begin()+i);
-								break;
+							for (int i = 0; i < selected_nodes.size(); i++) {
+								if (parent->m_nodeId == selected_nodes[i]) {
+									selected_nodes.erase(selected_nodes.begin()+i);
+									break;
+								}
 							}
+						} else {
+							node->isSelected = true;
+							gnode->original = gnode->material;
+							gnode->material.kd = vec3(0.0f, 0.0f, 0.0f);
+							if (parent->m_nodeId != HEAD_JOINT_ID) selected_nodes.push_back(parent->m_nodeId);
 						}
-					} else {
-						node->isSelected = true;
-						gnode->original = gnode->material;
-						gnode->material.kd = vec3(0.0f, 0.0f, 0.0f);
-						selected_nodes.push_back(nodeId);
 					}
 				}
 			}
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) mouseMiddleClicked = true;
 			if (button == GLFW_MOUSE_BUTTON_RIGHT) mouseRightClicked = true;
 		}
+
 		if (actions == GLFW_RELEASE) {
+			vector<unsigned int> ids;
+
 			if (button == GLFW_MOUSE_BUTTON_LEFT) {
 				mouseLeftClicked = false;
-				add_command(m_rootNode->m_nodeId, TMP, ttype);
-				TMP = mat4();
+				if (mode == POSITION) {
+					ids.push_back(m_rootNode->m_nodeId);
+					add_command(ids, TMP, ttype);
+				}
 			}
+
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
 				mouseMiddleClicked = false;
-				add_command(m_rootNode->m_nodeId, TMP, ttype);
-				TMP = mat4();
+				if (mode == POSITION) {
+					ids.push_back(m_rootNode->m_nodeId);
+					add_command(ids, TMP, ttype);
+				}
+
+				if (mode == JOINT) {
+					for (int i = 0; i < selected_nodes.size(); i++) {
+						ids.push_back(selected_nodes[i]);
+					}
+					add_command(ids, TMP, ttype);
+				}
 			}
+
 			if (button == GLFW_MOUSE_BUTTON_RIGHT) {
 				mouseRightClicked = false;
-				add_command(m_rootNode->m_nodeId, TMP, ttype);
-				TMP = mat4();
+				if (mode == POSITION) {
+					ids.push_back(m_rootNode->m_nodeId);
+					add_command(ids, TMP, ttype);
+				}
+
+				if (mode == JOINT) {
+					ids.push_back(HEAD_JOINT_ID);
+					add_command(ids, TMP, ttype);
+				}
 			}
+
+			TMP = mat4();
 		}
 	}
 

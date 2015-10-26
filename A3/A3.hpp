@@ -9,6 +9,7 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <vector>
 
 class GeometryNode;
 
@@ -54,7 +55,8 @@ protected:
 
 	void traverse(SceneNode *node, const glm::mat4 T);
 	SceneNode* getNode(SceneNode *node, unsigned int id);
-	void add_command(unsigned int id, glm::mat4 T, int type);
+	SceneNode* getPNode(SceneNode *node, unsigned int id);
+	void add_command(std::vector<unsigned int> ids, glm::mat4 T, int type);
 	void undo();
 	void redo();
 	void set_picking_mode(int mode);
