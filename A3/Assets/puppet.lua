@@ -61,7 +61,7 @@ leftShoulder:scale(0.2, 0.2, 0.2)
 leftShoulder:translate(-0.4, 0.35, 0.0)
 leftShoulder:set_material(blue)
 
-j_torso_leftArm = gr.joint('j_torso_leftArm', {-PI/4, 0, PI/4}, {-PI/2, 0, PI/2})
+j_torso_leftArm = gr.joint('j_torso_leftArm', {-PI/4, 0, PI/4}, {-PI/4, 0, PI/4})
 leftShoulder:add_child(j_torso_leftArm)
 
 leftArm = gr.mesh('cube', 'leftArm')

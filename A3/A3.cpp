@@ -747,9 +747,11 @@ bool A3::mouseMoveEvent (
 					case JOINT:
 						T = rotate(mat4(), (float) theta, vec3(0.0f, 1.0f, 0.0f));
 						JointNode *jnode = static_cast<JointNode *>(getNode(m_rootNode, HEAD_JOINT_ID));
-						if (jnode->currentY + theta > jnode->m_joint_y.min && jnode->currentY + theta < jnode->m_joint_y.max) {
-							jnode->set_transform(jnode->get_transform() * T);
-							jnode->currentY += theta;
+						if (jnode->isSelected) {
+							if (jnode->currentY + theta > jnode->m_joint_y.min && jnode->currentY + theta < jnode->m_joint_y.max) {
+								jnode->set_transform(jnode->get_transform() * T);
+								jnode->currentY += theta;
+							}
 						}
 						break;
 				}
@@ -808,8 +810,8 @@ bool A3::mouseButtonInputEvent (
 
 					if (parent->m_nodeType == NodeType::JointNode) {
 						GeometryNode* gnode = static_cast<GeometryNode *>(node);
-						if (node->isSelected) {
-							node->isSelected = false;
+						if (parent->isSelected) {
+							parent->isSelected = false;
 							gnode->material = gnode->original;
 
 							for (int i = 0; i < selected_nodes.size(); i++) {
@@ -819,7 +821,7 @@ bool A3::mouseButtonInputEvent (
 								}
 							}
 						} else {
-							node->isSelected = true;
+							parent->isSelected = true;
 							gnode->original = gnode->material;
 							gnode->material.kd = vec3(0.0f, 0.0f, 0.0f);
 							if (parent->m_nodeId != HEAD_JOINT_ID) selected_nodes.push_back(parent->m_nodeId);
@@ -865,8 +867,11 @@ bool A3::mouseButtonInputEvent (
 				}
 
 				if (mode == JOINT) {
-					ids.push_back(HEAD_JOINT_ID);
-					add_command(ids, TMP, ttype);
+					JointNode *jnode = static_cast<JointNode *>(getNode(m_rootNode, HEAD_JOINT_ID));
+					if (jnode->isSelected) {
+						ids.push_back(HEAD_JOINT_ID);
+						add_command(ids, TMP, ttype);
+					}
 				}
 			}
 
