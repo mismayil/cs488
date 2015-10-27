@@ -1,0 +1,14 @@
+Compilation
+===========
+To compile:
+	premake4 gmake
+	make
+To run:
+	./A3 puppet.lua
+
+Manual
+======
+Added new fields to JointNode and Geometry classes.
+
+Puppet is the famous tinky winky from telebuddies. Hierarchy is roughly the same as one given with extra fingers, legs, feet.
+Note that there are 16 degrees of freedom. (fingers, arms, shoulders, thighs, legs, feet)

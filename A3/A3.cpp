@@ -12,6 +12,7 @@ using namespace std;
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/io.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <set>
 
 using namespace glm;
 
@@ -22,7 +23,10 @@ const size_t CIRCLE_PTS = 48;
 #define PI 				3.14159265359
 #define FACTOR 			(double) 2 / m_windowWidth
 
-#define HEAD_JOINT_ID 3
+static int HEAD_JOINT_ID = 3;
+set<unsigned int> xRotaters;
+set<unsigned int> yRotaters;
+set<unsigned int> zRotaters;
 
 enum modes {
 	POSITION,
@@ -50,11 +54,17 @@ bool mouseLeftClicked = false;
 bool mouseMiddleClicked = false;
 bool mouseRightClicked = false;
 
+mat4 TMPX;
+mat4 TMPY;
+mat4 TMPZ;
 mat4 TMP;    // current matrix transformation
+mat4 TPOSITION;
+mat4 ORIENTATION;
+
 int ttype;   // current trans type
 
 vector<command> commands;
-unsigned int last_command = -1;
+int last_command = -1;
 vector<unsigned int> selected_nodes;
 
 mat4 vAxisRotMatrix(float fVecX, float fVecY, float fVecZ);
@@ -90,12 +100,11 @@ void A3::add_command(vector<unsigned int> ids, mat4 T, int type) {
 }
 
 void A3::undo() {
-	if (commands.empty() || last_command < 1) return;
+	if (commands.empty() || last_command < 0) return;
 	for (unsigned int i = 0; i < commands[last_command].ids.size(); i++) {
 		SceneNode *node = getNode(m_rootNode, commands[last_command].ids[i]);
 		if (!node) return;
-		if (commands[last_command].type == TRANSLATE) node->set_transform(inverse(commands[last_command].T) * node->get_transform());
-		else node->set_transform(node->get_transform() * inverse(commands[last_command].T));
+		node->set_transform(node->get_transform() * inverse(commands[last_command].T));
 	}
 	last_command--;
 }
@@ -106,8 +115,7 @@ void A3::redo() {
 	for (unsigned int i = 0; i < commands[last_command].ids.size(); i++) {
 		SceneNode *node = getNode(m_rootNode, commands[last_command].ids[i]);
 		if (!node) return;
-		if (commands[last_command].type == TRANSLATE) node->set_transform(commands[last_command].T * node->get_transform());
-		else node->set_transform(node->get_transform() * commands[last_command].T);
+		node->set_transform(node->get_transform() * commands[last_command].T);
 	}
 }
 
@@ -117,6 +125,36 @@ void A3::set_picking_mode(int mode) {
 	glUniform1i(picking, mode);
 	CHECK_GL_ERRORS;
 	m_shader.disable();
+}
+
+void A3::resetPosition() {
+	m_rootNode->set_transform(inverse(TPOSITION) * m_rootNode->get_transform());
+	TPOSITION = mat4();
+}
+
+void A3::resetOrientation() {
+	m_rootNode->set_transform(m_rootNode->get_transform() * inverse(ORIENTATION));
+	ORIENTATION = mat4();
+}
+
+void A3::resetJoints() {
+	for (int i = 0; i <= last_command; i++) {
+		for (int j = 0; j < commands[i].ids.size(); j++) {
+			SceneNode *node = getNode(m_rootNode, commands[i].ids[j]);
+			if (node->m_nodeType == NodeType::JointNode) {
+				node->set_transform(node->get_transform() * inverse(commands[i].T));
+			}
+		}
+	}
+
+	commands.clear();
+	last_command = -1;
+}
+
+void A3::resetAll() {
+	resetPosition();
+	resetOrientation();
+	resetJoints();
 }
 
 //----------------------------------------------------------------------------------------
@@ -183,10 +221,29 @@ void A3::init()
 
 	initLightSources();
 
-	vector<unsigned int> ids;
-	ids.push_back(m_rootNode->m_nodeId);
-	add_command(ids, mat4(), TRANSLATE);
+	set<unsigned int>::iterator xit = xRotaters.begin();
+	set<unsigned int>::iterator yit = yRotaters.begin();
+	set<unsigned int>::iterator zit = zRotaters.begin();
 
+	xRotaters.insert(xit, 49);
+	xRotaters.insert(xit, 56);
+	xRotaters.insert(xit, 61);
+	xRotaters.insert(xit, 52);
+	xRotaters.insert(xit, 58);
+	xRotaters.insert(xit, 64);
+
+	yRotaters.insert(yit, 3);
+
+	zRotaters.insert(zit, 22);
+	zRotaters.insert(zit, 25);
+	zRotaters.insert(zit, 28);
+	zRotaters.insert(zit, 31);
+	zRotaters.insert(zit, 34);
+	zRotaters.insert(zit, 35);
+	zRotaters.insert(zit, 36);
+	zRotaters.insert(zit, 41);
+	zRotaters.insert(zit, 42);
+	zRotaters.insert(zit, 43);
 	// Exiting the current scope calls delete automatically on meshConsolidator freeing
 	// all vertex data resources.  This is fine since we already copied this data to
 	// VBOs on the GPU.  We have no use for storing vertex data on the CPU side beyond
@@ -430,19 +487,19 @@ void A3::guiLogic()
 
 			if (ImGui::BeginMenu("Application")) {
 				if (ImGui::Button("Reset Position [I]")) {
-
+					resetPosition();
 				}
 				if (ImGui::Button("Reset Orientation [O]")) {
-
+					resetOrientation();
 				}
 				if (ImGui::Button("Reset Joints [N]")) {
-
+					resetJoints();
 				}
 				if (ImGui::Button("Reset All [A]")) {
-
+					resetAll();
 				}
 				if (ImGui::Button("Quit [Q]")) {
-
+					glfwSetWindowShouldClose(m_window, GL_TRUE);
 				}
 				ImGui::EndMenu();
 			}
@@ -703,12 +760,13 @@ bool A3::mouseMoveEvent (
 			float diameter = m_framebufferWidth / 2 < m_framebufferHeight / 2 ? m_framebufferWidth / 2: m_framebufferHeight / 2;
 			vec4 newAxis;
 			mat4 T;
+			vec3 rVec = vec3(0.0f, 0.0f, 1.0f);
 
 			if (mouseLeftClicked) {
 				switch (mode) {
 					case POSITION:
 						T = translate(mat4(), vec3((curMousePos.x - prevMousePos.x) * FACTOR, -(curMousePos.y - prevMousePos.y) * FACTOR, 0));
-						ttype = TRANSLATE;
+						TPOSITION *= T;
 						m_rootNode->set_transform(T * m_rootNode->get_transform());
 						break;
 					case JOINT:
@@ -720,18 +778,28 @@ bool A3::mouseMoveEvent (
 				switch (mode) {
 					case POSITION:
 						T = translate(mat4(), vec3(0, 0, -(curMousePos.y - prevMousePos.y) * FACTOR));
-						ttype = TRANSLATE;
+						TPOSITION *= T;
 						m_rootNode->set_transform(T * m_rootNode->get_transform());
 						break;
 					case JOINT:
-						T = rotate(mat4(), (float) theta, vec3(0.0f, 0.0f, 1.0f));
 						for (int i = 0; i < selected_nodes.size(); i++) {
 							JointNode *jnode = static_cast<JointNode *>(getNode(m_rootNode, selected_nodes[i]));
 							if (jnode->currentX + theta > jnode->m_joint_x.min && jnode->currentX + theta < jnode->m_joint_x.max) {
+								if (xRotaters.count(jnode->m_nodeId)) {
+									rVec = vec3(1.0f, 0.0f, 0.0f);
+								}
+								if (yRotaters.count(jnode->m_nodeId)) {
+									rVec = vec3(0.0f, 1.0f, 0.0f);
+								}
+								if (zRotaters.count(jnode->m_nodeId)) {
+									rVec = vec3(0.0f, 0.0f, 1.0f);
+								}
+								T = rotate(mat4(), (float) theta, rVec);
 								jnode->set_transform(jnode->get_transform() * T);
 								jnode->currentX += theta;
 							}
 						}
+						TMP *= T;
 						break;
 				}
 			}
@@ -741,11 +809,12 @@ bool A3::mouseMoveEvent (
 					case POSITION:
 						newAxis = vCalcRotVec(newPos.x, newPos.y, oldPos.x, oldPos.y, diameter);
 						T = vAxisRotMatrix(newAxis.x, newAxis.y, newAxis.z);
-						ttype = ROTATE_SCALE;
+						ORIENTATION *= T;
 						m_rootNode->set_transform(m_rootNode->get_transform() * T);
 						break;
 					case JOINT:
 						T = rotate(mat4(), (float) theta, vec3(0.0f, 1.0f, 0.0f));
+						TMP *= T;
 						JointNode *jnode = static_cast<JointNode *>(getNode(m_rootNode, HEAD_JOINT_ID));
 						if (jnode->isSelected) {
 							if (jnode->currentY + theta > jnode->m_joint_y.min && jnode->currentY + theta < jnode->m_joint_y.max) {
@@ -756,8 +825,6 @@ bool A3::mouseMoveEvent (
 						break;
 				}
 			}
-
-			TMP *= T;
 			prevMousePos = curMousePos;
 		}
 	}
@@ -838,18 +905,10 @@ bool A3::mouseButtonInputEvent (
 
 			if (button == GLFW_MOUSE_BUTTON_LEFT) {
 				mouseLeftClicked = false;
-				if (mode == POSITION) {
-					ids.push_back(m_rootNode->m_nodeId);
-					add_command(ids, TMP, ttype);
-				}
 			}
 
 			if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
 				mouseMiddleClicked = false;
-				if (mode == POSITION) {
-					ids.push_back(m_rootNode->m_nodeId);
-					add_command(ids, TMP, ttype);
-				}
 
 				if (mode == JOINT) {
 					for (int i = 0; i < selected_nodes.size(); i++) {
@@ -861,10 +920,6 @@ bool A3::mouseButtonInputEvent (
 
 			if (button == GLFW_MOUSE_BUTTON_RIGHT) {
 				mouseRightClicked = false;
-				if (mode == POSITION) {
-					ids.push_back(m_rootNode->m_nodeId);
-					add_command(ids, TMP, ttype);
-				}
 
 				if (mode == JOINT) {
 					JointNode *jnode = static_cast<JointNode *>(getNode(m_rootNode, HEAD_JOINT_ID));
@@ -874,8 +929,6 @@ bool A3::mouseButtonInputEvent (
 					}
 				}
 			}
-
-			TMP = mat4();
 		}
 	}
 
@@ -923,10 +976,51 @@ bool A3::keyInputEvent (
 ) {
 	bool eventHandled(false);
 
-	if( action == GLFW_PRESS ) {
-		if( key == GLFW_KEY_M ) {
-			show_gui = !show_gui;
-			eventHandled = true;
+	if (action == GLFW_PRESS) {
+		switch (key) {
+			case GLFW_KEY_Q:
+				glfwSetWindowShouldClose(m_window, GL_TRUE);
+				break;
+			case GLFW_KEY_A:
+				resetAll();
+				break;
+			case GLFW_KEY_O:
+				resetOrientation();
+				break;
+			case GLFW_KEY_N:
+				resetJoints();
+				break;
+			case GLFW_KEY_I:
+				resetPosition();
+				break;
+			case GLFW_KEY_U:
+				undo();
+				break;
+			case GLFW_KEY_R:
+				redo();
+				break;
+			case GLFW_KEY_C:
+				CIRCLE = CIRCLE ? false : true;
+				break;
+			case GLFW_KEY_Z:
+				Z_BUFFER = Z_BUFFER ? false : true;
+				break;
+			case GLFW_KEY_B:
+				BACKFACE_CULLING = BACKFACE_CULLING ? false : true;
+				break;
+			case GLFW_KEY_F:
+				FRONTFACE_CULLING = FRONTFACE_CULLING ? false : true;
+				break;
+			case GLFW_KEY_P:
+				mode = POSITION;
+				break;
+			case GLFW_KEY_J:
+				mode = JOINT;
+				break;
+			case GLFW_KEY_M:
+				show_gui = !show_gui;
+				eventHandled = true;
+				break;
 		}
 	}
 	// Fill in with event handling code...
