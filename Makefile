@@ -6,7 +6,7 @@ ifndef config
 endif
 export config
 
-PROJECTS := cs488-framework imgui
+PROJECTS := cs488-framework imgui lodepng
 
 .PHONY: all clean help $(PROJECTS)
 
@@ -20,9 +20,14 @@ imgui:
 	@echo "==== Building imgui ($(config)) ===="
 	@${MAKE} --no-print-directory -C build -f imgui.make
 
+lodepng: 
+	@echo "==== Building lodepng ($(config)) ===="
+	@${MAKE} --no-print-directory -C build -f lodepng.make
+
 clean:
 	@${MAKE} --no-print-directory -C build -f cs488-framework.make clean
 	@${MAKE} --no-print-directory -C build -f imgui.make clean
+	@${MAKE} --no-print-directory -C build -f lodepng.make clean
 
 help:
 	@echo "Usage: make [config=name] [target]"
@@ -36,5 +41,6 @@ help:
 	@echo "   clean"
 	@echo "   cs488-framework"
 	@echo "   imgui"
+	@echo "   lodepng"
 	@echo ""
 	@echo "For more information, see http://industriousone.com/premake/quick-start"

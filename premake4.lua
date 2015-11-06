@@ -65,7 +65,7 @@ solution "BuildStaticLibs"
         includedirs (includeDirList)
         files { "shared/cs488-framework/*.cpp" }
 
-    -- Build imgui-framework static library
+    -- Build imgui static library
     project "imgui"
         kind "StaticLib"
         language "C++"
@@ -80,4 +80,19 @@ solution "BuildStaticLibs"
         files { 
             "shared/imgui/*.cpp",
             "shared/gl3w/GL/gl3w.c"
+        }
+
+    -- Build lodepng static library
+    project "lodepng"
+        kind "StaticLib"
+        language "C++"
+        location "build"
+        objdir "build"
+        targetdir "lib"
+        includedirs (includeDirList)
+        includedirs {
+            "shared/lodepng"
+        }
+        files { 
+            "shared/lodepng/lodepng.cpp"
         }
