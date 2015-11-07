@@ -9,3 +9,15 @@ PhongMaterial::PhongMaterial(
 
 PhongMaterial::~PhongMaterial()
 {}
+
+glm::vec3 PhongMaterial::getkd() {
+	return m_kd;
+}
+
+glm::vec3 PhongMaterial::getks() {
+	return m_ks;
+}
+
+double PhongMaterial::getsh() {
+	return m_shininess;
+}

@@ -30,7 +30,7 @@ std::ostream& operator<<(std::ostream& out, const Mesh& mesh)
 {
   out << "mesh {";
   /*
-  
+
   for( size_t idx = 0; idx < mesh.m_verts.size(); ++idx ) {
   	const MeshVertex& v = mesh.m_verts[idx];
   	out << glm::to_string( v.m_position );
