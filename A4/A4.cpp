@@ -4,15 +4,12 @@
 #include "PhongMaterial.hpp"
 #include <math.h>
 
-#define PI 3.14
+#define PI 3.1415926535
 #define max(a, b) (a < b ? b : a)
+#define min(a, b) (a < b ? a : b)
+#define rad(a) (a * PI / 180)
 
 using namespace std;
-
-glm::vec3 meti(glm::vec3 a, glm::vec3 b) {
-	return glm::vec3(a.x * b.x, a.y * b.y, a.z * b.z);
-}
-
 
 void A4_Render(
 		// What to render
@@ -53,14 +50,14 @@ void A4_Render(
 
 	view = glm::normalize(view);
 	up = glm::normalize(up);
-	glm::vec3 right = glm::normalize(glm::cross(view, up));
+	glm::vec3 left = glm::normalize(glm::cross(view, up));
 
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
 
 			GeometryNode *seenNode = NULL;
 
-			glm::vec3 pixel = eye + view + (-1 + 2 * (0.5 + y) / h) * tan(fovy / 2 * PI / 180.0) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(fovy / 2 * PI / 180.0) * right;
+			glm::vec3 pixel = eye + view + (-1 + 2 * (0.5 + y) / h) * tan(rad(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(rad(fovy / 2)) * left;
 
 			glm::vec3 ray = pixel - eye;
 			double mintao = 0;
@@ -100,28 +97,21 @@ void A4_Render(
 
 				for (Light *light : lights) {
 					glm::vec3 lightSource = light->position;
-					glm::vec3 lightRay = point - lightSource;
-					double tao = seenNode->m_primitive->intersect(lightSource, lightRay);
+					glm::vec3 lightRay = glm::normalize(lightSource - point);
+					glm::vec3 normal = seenNode->m_primitive->getNormal(point);
+					glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
+					double distance = glm::length(lightSource - point);
+					glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
+					glm::vec3 diffuse = kd * (float) max(glm::dot(lightRay, normal), 0.0) * intensity;
+					glm::vec3 specular =  ks * pow((float) max(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
 
-					if (tao >= 0) {
-						glm::vec3 normal = seenNode->m_primitive->getNormal(point);
-						glm::vec3 reflection = -1.0f * lightRay + 2.0f * glm::dot(lightRay, normal) * normal;
-						glm::vec3 intensity = light->colour;
-						glm::vec3 first = meti(kd * (float) max(glm::dot(lightRay, normal), fovy * PI / 180), intensity);
-						glm::vec3 second =  meti(ks * pow((float) max(glm::dot(reflection, ray), (180 - fovy) * PI / 180), shininess), intensity);
-						cout << "first" << first.x << " " << first.y << " " << first.z << endl;
-						cout << "second" <<  second.x << " " << second.y << " " << second.z << endl;
-
-						colour += first + second;
-					}
+					colour += diffuse + specular;
 				}
 
-				colour += meti(kd, ambient);
-				colour /= 255;
-				//std::cout << colour.x << " " << colour.y << " " << colour.z << std::endl;
-				image(x, y, 0) = colour.x;
-				image(x, y, 1) = colour.y;
-				image(x, y, 2) = colour.z;
+				colour += kd * ambient;
+				image(x, y, 0) = min(colour.x, 1.0);
+				image(x, y, 1) = min(colour.y, 1.0);
+				image(x, y, 2) = min(colour.z, 1.0);
 			}
 		}
 	}
