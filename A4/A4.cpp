@@ -2,12 +2,7 @@
 #include "A4.hpp"
 #include "GeometryNode.hpp"
 #include "PhongMaterial.hpp"
-#include <math.h>
-
-#define PI 3.1415926535
-#define max(a, b) (a < b ? b : a)
-#define min(a, b) (a < b ? a : b)
-#define rad(a) (a * PI / 180)
+#include "util.hpp"
 
 using namespace std;
 
@@ -31,8 +26,7 @@ void A4_Render(
 
   std::cout << "Calling A4_Render(\n" <<
 		  "\t" << *root <<
-          "\t" << "Image(width:" << image.width() << ", height:" << image.height() << ")\n"
-          "\t" << "eye:  " << glm::to_string(eye) << std::endl <<
+          "\t" << "Image(width:" << to_string(eye) << std::endl <<
 		  "\t" << "view: " << glm::to_string(view) << std::endl <<
 		  "\t" << "up:   " << glm::to_string(up) << std::endl <<
 		  "\t" << "fovy: " << fovy << std::endl <<
@@ -59,8 +53,8 @@ void A4_Render(
 
 			glm::vec3 pixel = eye + view + (-1 + 2 * (0.5 + y) / h) * tan(rad(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(rad(fovy / 2)) * left;
 
-			glm::vec3 ray = pixel - eye;
-			double mintao = 0;
+			glm::vec3 ray = glm::normalize(pixel - eye);
+			TAO mintao;
 
 			for (SceneNode *node : root->children) {
 
@@ -68,9 +62,9 @@ void A4_Render(
 
 					GeometryNode *gnode = static_cast<GeometryNode *>(node);
 					Primitive *prim = gnode->m_primitive;
-					double tao = prim->intersect(eye, ray);
+					TAO tao = prim->intersect(eye, ray);
 
-					if (tao >= 0 && ((seenNode == NULL) || (tao < mintao))) {
+					if (tao.hit && ((seenNode == NULL) || (tao.tao < mintao.tao))) {
 						seenNode = gnode;
 						mintao = tao;
 					}
@@ -88,27 +82,45 @@ void A4_Render(
 
 			} else {
 
-				glm::vec3 point = eye + mintao * ray;
-				glm::vec3 colour = glm::vec3(0.0f, 0.0f, 0.0f);
+				glm::vec3 point = eye + mintao.tao * ray;
+				glm::vec3 normal = glm::normalize(mintao.n);
 				PhongMaterial *pmaterial = static_cast<PhongMaterial *>(seenNode->m_material);
 				glm::vec3 kd = pmaterial->getkd();
 				glm::vec3 ks = pmaterial->getks();
 				double shininess = pmaterial->getsh();
+				glm::vec3 colour = kd * ambient;
 
 				for (Light *light : lights) {
 					glm::vec3 lightSource = light->position;
 					glm::vec3 lightRay = glm::normalize(lightSource - point);
-					glm::vec3 normal = seenNode->m_primitive->getNormal(point);
-					glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
-					double distance = glm::length(lightSource - point);
-					glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
-					glm::vec3 diffuse = kd * (float) max(glm::dot(lightRay, normal), 0.0) * intensity;
-					glm::vec3 specular =  ks * pow((float) max(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
+					bool shadow = false;
+					glm::vec3 shadowRay = point +  EPS * (lightSource - point) + mintao.tao * (lightSource - point);
 
-					colour += diffuse + specular;
+					for (SceneNode *node : root->children) {
+
+						if (node->m_nodeType == NodeType::GeometryNode) {
+
+							GeometryNode *gnode = static_cast<GeometryNode *>(node);
+							Primitive *prim = gnode->m_primitive;
+							TAO tao = prim->intersect(point, shadowRay);
+
+							if (tao.hit && gnode->m_nodeId != seenNode->m_nodeId) {
+								shadow = true;
+								break;
+							}
+						}
+					}
+
+					if (!shadow) {
+						glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
+						double distance = glm::length(lightSource - point);
+						glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
+						glm::vec3 diffuse = kd * (float) max(glm::dot(lightRay, normal), 0.0) * intensity;
+						glm::vec3 specular =  ks * pow((float) max(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
+						colour += diffuse + specular;
+					}
 				}
 
-				colour += kd * ambient;
 				image(x, y, 0) = min(colour.x, 1.0);
 				image(x, y, 1) = min(colour.y, 1.0);
 				image(x, y, 2) = min(colour.z, 1.0);
