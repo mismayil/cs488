@@ -46,3 +46,16 @@ std::ostream& operator<<(std::ostream& out, const Mesh& mesh)
   out << "}";
   return out;
 }
+
+TAO* Mesh::intersect(glm::vec3 eye, glm::vec3 ray) {
+	TAO *mintao = NULL;
+
+	for (int i = 0; i < m_faces.size(); i++) {
+		TAO *tao = intersectTriangle(eye, ray, m_vertices[m_faces[i].v1], m_vertices[m_faces[i].v2], m_vertices[m_faces[i].v3]);
+		if (tao->hit && (!mintao || tao->tao < mintao->tao)) mintao = tao;
+	}
+
+	if (mintao) return mintao;
+
+	return new TAO(0, false, glm::vec3(0));
+}

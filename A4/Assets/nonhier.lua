@@ -33,9 +33,9 @@ s5:set_material(mat1)
 
 -- A small stellated dodecahedron.
 
---steldodec = gr.mesh( 'dodec', 'smstdodeca.obj' )
---steldodec:set_material(mat3)
---scene_root:add_child(steldodec)
+steldodec = gr.mesh( 'dodec', 'Assets/smstdodeca.obj' )
+steldodec:set_material(mat3)
+scene_root:add_child(steldodec)
 
 white_light = gr.light({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
 orange_light = gr.light({400.0, 100.0, 150.0}, {0.7, 0.0, 0.7}, {1, 0, 0})

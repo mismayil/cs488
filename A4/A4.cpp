@@ -51,10 +51,10 @@ void A4_Render(
 
 			GeometryNode *seenNode = NULL;
 
-			glm::vec3 pixel = eye + view + (-1 + 2 * (0.5 + y) / h) * tan(rad(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(rad(fovy / 2)) * left;
+			glm::vec3 pixel = eye + view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left;
 
 			glm::vec3 ray = glm::normalize(pixel - eye);
-			TAO mintao;
+			TAO *mintao;
 
 			for (SceneNode *node : root->children) {
 
@@ -62,9 +62,9 @@ void A4_Render(
 
 					GeometryNode *gnode = static_cast<GeometryNode *>(node);
 					Primitive *prim = gnode->m_primitive;
-					TAO tao = prim->intersect(eye, ray);
+					TAO *tao = prim->intersect(eye, ray);
 
-					if (tao.hit && ((seenNode == NULL) || (tao.tao < mintao.tao))) {
+					if (tao->hit && ((seenNode == NULL) || (tao->tao < mintao->tao))) {
 						seenNode = gnode;
 						mintao = tao;
 					}
@@ -74,16 +74,16 @@ void A4_Render(
 			if (seenNode == NULL) {
 
 				// Red: increasing from top to bottom
-				image(x, y, 0) = (double)y / h;
+				image(x, y, 0) = 0.0;
 				// Green: increasing from left to right
-				image(x, y, 1) = (double)x / w;
+				image(x, y, 1) = 0.0;
 				// Blue: in lower-left and upper-right corners
-				image(x, y, 2) = ((y < h/2 && x < w/2) || (y >= h/2 && x >= w/2)) ? 1.0 : 0.0;
+				image(x, y, 2) = 1.0;
 
 			} else {
 
-				glm::vec3 point = eye + mintao.tao * ray;
-				glm::vec3 normal = glm::normalize(mintao.n);
+				glm::vec3 point = eye + mintao->tao * ray;
+				glm::vec3 normal = glm::normalize(mintao->n);
 				PhongMaterial *pmaterial = static_cast<PhongMaterial *>(seenNode->m_material);
 				glm::vec3 kd = pmaterial->getkd();
 				glm::vec3 ks = pmaterial->getks();
@@ -94,7 +94,7 @@ void A4_Render(
 					glm::vec3 lightSource = light->position;
 					glm::vec3 lightRay = glm::normalize(lightSource - point);
 					bool shadow = false;
-					glm::vec3 shadowRay = point +  EPS * (lightSource - point) + mintao.tao * (lightSource - point);
+					glm::vec3 shadowRay = point +  EPS * (lightSource - point) + mintao->tao * (lightSource - point);
 
 					for (SceneNode *node : root->children) {
 
@@ -102,9 +102,9 @@ void A4_Render(
 
 							GeometryNode *gnode = static_cast<GeometryNode *>(node);
 							Primitive *prim = gnode->m_primitive;
-							TAO tao = prim->intersect(point, shadowRay);
+							TAO *tao = prim->intersect(point, shadowRay);
 
-							if (tao.hit && gnode->m_nodeId != seenNode->m_nodeId) {
+							if (tao->hit && gnode->m_nodeId != seenNode->m_nodeId) {
 								shadow = true;
 								break;
 							}
@@ -115,15 +115,15 @@ void A4_Render(
 						glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
 						double distance = glm::length(lightSource - point);
 						glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
-						glm::vec3 diffuse = kd * (float) max(glm::dot(lightRay, normal), 0.0) * intensity;
-						glm::vec3 specular =  ks * pow((float) max(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
+						glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay, normal), 0.0) * intensity;
+						glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
 						colour += diffuse + specular;
 					}
 				}
 
-				image(x, y, 0) = min(colour.x, 1.0);
-				image(x, y, 1) = min(colour.y, 1.0);
-				image(x, y, 2) = min(colour.z, 1.0);
+				image(x, y, 0) = MIN(colour.x, 1.0);
+				image(x, y, 1) = MIN(colour.y, 1.0);
+				image(x, y, 2) = MIN(colour.z, 1.0);
 			}
 		}
 	}

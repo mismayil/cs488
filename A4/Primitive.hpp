@@ -2,18 +2,12 @@
 
 #include <glm/glm.hpp>
 #include "polyroots.hpp"
-
-// intersection info
-struct TAO {
-    double tao;
-    bool hit;
-    glm::vec3 n;
-};
+#include "util.hpp"
 
 class Primitive {
 public:
   virtual ~Primitive();
-  virtual TAO intersect(glm::vec3 eye, glm::vec3 ray);
+  virtual TAO *intersect(glm::vec3 eye, glm::vec3 ray);
 };
 
 class Sphere : public Primitive {
@@ -33,7 +27,7 @@ public:
   {
   }
   virtual ~NonhierSphere();
-  TAO intersect(glm::vec3 eye, glm::vec3 ray);
+  TAO *intersect(glm::vec3 eye, glm::vec3 ray);
 
 private:
   glm::vec3 m_pos;
@@ -47,7 +41,7 @@ public:
   {
   }
   virtual ~NonhierBox();
-  TAO intersect(glm::vec3 eye, glm::vec3 ray);
+  TAO *intersect(glm::vec3 eye, glm::vec3 ray);
 
 private:
   glm::vec3 m_pos;
