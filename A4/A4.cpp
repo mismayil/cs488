@@ -6,7 +6,7 @@
 
 using namespace std;
 
-TAO* traverse(SceneNode *node, glm::vec4 eye, glm::vec4 ray) {
+TAO* intersect(SceneNode *node, glm::vec4 eye, glm::vec4 ray) {
 	TAO *mintao = NULL;
 
 	if (node->m_nodeType == NodeType::GeometryNode) {
@@ -19,7 +19,7 @@ TAO* traverse(SceneNode *node, glm::vec4 eye, glm::vec4 ray) {
 	}
 
 	for (SceneNode *child : node->children) {
-		TAO *tao = traverse(child, node->get_inverse() * eye, node->get_inverse() * ray);
+		TAO *tao = intersect(child, node->get_inverse() * eye, node->get_inverse() * ray);
 		if (tao && tao->hit && ((mintao == NULL) || (tao->tao < mintao->tao))) mintao = tao;
 	}
 
@@ -75,7 +75,7 @@ void A4_Render(
 
 			glm::vec3 ray = glm::normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left);
 
-			TAO *ptao = traverse(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
+			TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
 
 			image(x, y, 0) = 0.0;
 			image(x, y, 1) = 0.0;
@@ -97,7 +97,7 @@ void A4_Render(
 				glm::vec3 lightRay = glm::normalize(lightSource - point);
 				glm::vec3 shadowRay = EPS * lightRay + ptao->tao * lightRay;
 
-				TAO *stao = traverse(root, glm::vec4(point, 1), glm::vec4(shadowRay, 0));
+				TAO *stao = intersect(root, glm::vec4(point, 1), glm::vec4(shadowRay, 0));
 
 				if (!stao || !stao->hit || stao->node->m_nodeId == ptao->node->m_nodeId) {
 					glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);

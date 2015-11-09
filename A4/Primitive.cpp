@@ -108,3 +108,53 @@ TAO* NonhierBox::intersect(glm::vec3 eye, glm::vec3 ray) {
 
     return new TAO(0, false, glm::vec3(0));
 }
+
+
+BoundedBox::BoundedBox(vector<glm::vec3> v) {
+    xmin = v[0].x, ymin = v[0].y, zmin = v[0].z;
+    xmax = v[0].x, ymax = v[0].y, zmax = v[0].z;
+
+    for (int i = 0; i < v.size(); i++) {
+        if (v[i].x < xmin) xmin = v[i].x;
+        if (v[i].y < ymin) ymin = v[i].y;
+        if (v[i].z < zmin) zmin = v[i].z;
+        if (v[i].x > xmax) xmax = v[i].x;
+        if (v[i].y > ymax) ymax = v[i].y;
+        if (v[i].z > zmax) zmax = v[i].z;
+    }
+}
+
+bool BoundedBox::intersect(glm::vec3 eye, glm::vec3 ray) {
+    double ax = 1.0 / ray.x;
+    double ay = 1.0 / ray.y;
+    double az = 1.0 / ray.z;
+
+    double txmin, txmax, tymin, tymax, tzmin, tzmax;
+
+    if (ax >= 0) {
+        txmin = ax * (xmin - eye.x);
+        txmax = ax * (xmax - eye.x);
+    } else {
+        txmin = ax * (xmax - eye.x);
+        txmax = ax * (xmin - eye.x);
+    }
+
+    if (ay >= 0) {
+        tymin = ay * (ymin - eye.y);
+        tymax = ay * (ymax - eye.y);
+    } else {
+        tymin = ay * (ymax - eye.y);
+        tymax = ay * (ymin - eye.y);
+    }
+
+    if (az >= 0) {
+        tzmin = az * (zmin - eye.z);
+        tzmax = az * (zmax - eye.z);
+    } else {
+        tzmin = az * (zmax - eye.z);
+        tzmax = az * (zmin - eye.z);
+    }
+
+    if (txmin > tymax || tymin > txmax || txmin > tzmax || tzmin > txmax || tymin > tzmax || tzmin > tymax) return false;
+    return true;
+}

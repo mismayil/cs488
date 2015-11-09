@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <glm/glm.hpp>
 #include "polyroots.hpp"
 #include "util.hpp"
@@ -52,4 +53,11 @@ public:
   Cube();
   virtual ~Cube();
   TAO *intersect(glm::vec3 eye, glm::vec3 ray);
+};
+
+class BoundedBox {
+    double xmin, xmax, ymin, ymax, zmin, zmax;
+public:
+    BoundedBox(std::vector<glm::vec3> v);
+    bool intersect(glm::vec3 eye, glm::vec3 ray);
 };

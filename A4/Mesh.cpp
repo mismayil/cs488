@@ -24,6 +24,8 @@ Mesh::Mesh( const std::string& fname )
 			m_faces.push_back( Triangle( s1 - 1, s2 - 1, s3 - 1 ) );
 		}
 	}
+
+	aabb = new BoundedBox(m_vertices);
 }
 
 std::ostream& operator<<(std::ostream& out, const Mesh& mesh)
@@ -48,6 +50,9 @@ std::ostream& operator<<(std::ostream& out, const Mesh& mesh)
 }
 
 TAO* Mesh::intersect(glm::vec3 eye, glm::vec3 ray) {
+
+	if (!aabb->intersect(eye, ray)) return new TAO(0, false, glm::vec3(0));
+
 	TAO *mintao = NULL;
 
 	for (int i = 0; i < m_faces.size(); i++) {
