@@ -3,7 +3,9 @@
 #include <math.h>
 #include <glm/glm.hpp>
 
+#define OPT
 #define EPS 0.1
+#define SAMPLE 3
 #define MAX(a, b) (a < b ? b : a)
 #define MIN(a, b) (a < b ? a : b)
 #define RAD(a) (a * M_PI / 180)

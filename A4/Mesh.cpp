@@ -51,7 +51,9 @@ std::ostream& operator<<(std::ostream& out, const Mesh& mesh)
 
 TAO* Mesh::intersect(glm::vec3 eye, glm::vec3 ray) {
 
+#ifdef OPT
 	if (!aabb->intersect(eye, ray)) return new TAO(0, false, glm::vec3(0));
+#endif
 
 	TAO *mintao = NULL;
 

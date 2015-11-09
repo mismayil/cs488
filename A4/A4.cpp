@@ -68,6 +68,8 @@ void A4_Render(
 	up = glm::normalize(up);
 	glm::vec3 left = glm::normalize(glm::cross(view, up));
 
+	int a = w / 2, b = w / 2 + 5, c = h / 2 - 100, d = h / 2 - 100 + 5;
+
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
 
@@ -77,41 +79,61 @@ void A4_Render(
 
 			TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
 
-			image(x, y, 0) = 0.0;
-			image(x, y, 1) = 0.0;
-			image(x, y, 2) = 1.0;
+			if (x >= a && x <= b && y >= c && y <= d) {
+				image(x, y, 0) = 0.9;
+				image(x, y, 1) = 0.9;
+				image(x, y, 2) = 0.0;
+			} else {
+				image(x, y, 0) = 0.95;
+				image(x, y, 1) = 0.25;
+				image(x, y, 2) = 0.25;
+			}
 
 			if (!ptao || ptao->node == NULL) continue;
 
-			glm::vec3 point = eye + ptao->tao * ray;
-			glm::vec3 normal = glm::normalize(ptao->n);
-			GeometryNode *gnode = static_cast<GeometryNode *>(ptao->node);
-			PhongMaterial *pmaterial = static_cast<PhongMaterial *>(gnode->m_material);
-			glm::vec3 kd = pmaterial->getkd();
-			glm::vec3 ks = pmaterial->getks();
-			double shininess = pmaterial->getsh();
-			glm::vec3 colour = kd * ambient;
+			glm::vec3 colour = glm::vec3(0);
+			glm::vec3 kd, ks;
 
-			for (Light *light : lights) {
-				glm::vec3 lightSource = light->position;
-				glm::vec3 lightRay = glm::normalize(lightSource - point);
-				glm::vec3 shadowRay = EPS * lightRay + ptao->tao * lightRay;
+			for (int i = 0; i < SAMPLE; i++) {
+				for (int j = 0; j < SAMPLE; j++) {
+					ray = glm::normalize(view + (-1 + 2 * (y + (0.5 + i) / SAMPLE) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (x + (0.5 + j) / SAMPLE) / w) * tan(RAD(fovy / 2)) * left);
 
-				TAO *stao = intersect(root, glm::vec4(point, 1), glm::vec4(shadowRay, 0));
+					ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
 
-				if (!stao || !stao->hit || stao->node->m_nodeId == ptao->node->m_nodeId) {
-					glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
-					double distance = glm::length(lightSource - point);
-					glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
-					glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay, normal), 0.0) * intensity;
-					glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
-					colour += diffuse + specular;
+					if (!ptao || ptao->node == NULL) continue;
+
+					glm::vec3 point = eye + ptao->tao * ray;
+					glm::vec3 normal = glm::normalize(ptao->n);
+					GeometryNode *gnode = static_cast<GeometryNode *>(ptao->node);
+					PhongMaterial *pmaterial = static_cast<PhongMaterial *>(gnode->m_material);
+					kd = pmaterial->getkd();
+					ks = pmaterial->getks();
+					double shininess = pmaterial->getsh();
+
+					for (Light *light : lights) {
+						glm::vec3 lightSource = light->position;
+						glm::vec3 lightRay = glm::normalize(lightSource - point);
+						glm::vec3 shadowRay = EPS * lightRay + ptao->tao * lightRay;
+
+						TAO *stao = intersect(root, glm::vec4(point, 1), glm::vec4(shadowRay, 0));
+
+						if (!stao || !stao->hit || stao->node->m_nodeId == ptao->node->m_nodeId) {
+							glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
+							double distance = glm::length(lightSource - point);
+							glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
+							glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay, normal), 0.0) * intensity;
+							glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
+							colour += diffuse + specular;
+						}
+					}
 				}
+
+				colour += kd * ambient;
 			}
 
-			image(x, y, 0) = MIN(colour.x, 1.0);
-			image(x, y, 1) = MIN(colour.y, 1.0);
-			image(x, y, 2) = MIN(colour.z, 1.0);
+			image(x, y, 0) = MIN(colour.x / (SAMPLE * SAMPLE), 1.0);
+			image(x, y, 1) = MIN(colour.y / (SAMPLE * SAMPLE), 1.0);
+			image(x, y, 2) = MIN(colour.z / (SAMPLE * SAMPLE), 1.0);
 		}
 	}
 
