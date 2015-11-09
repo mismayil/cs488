@@ -3,18 +3,20 @@
 #include <math.h>
 #include <glm/glm.hpp>
 
-#define EPS 0.001
+#define EPS 0.01
 #define MAX(a, b) (a < b ? b : a)
 #define MIN(a, b) (a < b ? a : b)
 #define RAD(a) (a * M_PI / 180)
 
+class SceneNode;
 // intersection info
 class TAO {
     public:
         double tao;
         bool hit;
         glm::vec3 n;
-        TAO(double tao, bool hit, glm::vec3 n) : tao(tao), hit(hit), n(n) {}
+        SceneNode *node;
+        TAO(double tao, bool hit, glm::vec3 n) : tao(tao), hit(hit), n(n), node(NULL) {}
 };
 
 struct plane {

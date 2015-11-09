@@ -32,6 +32,6 @@ TAO *intersectTriangle(glm::vec3 eye, glm::vec3 ray, glm::vec3 u, glm::vec3 v, g
     double beta = (i * (a * k - j * b) + h * (j * c - a * l) + g * (b * l - k * c)) / M;
     double tao = -(f * (a * k - j * b) + e * (j * c - a * l) + d * (b * l - k * c)) / M;
     glm::vec3 n = glm::cross(v - u, w - u);
-    if (alpha >= 0.0 && beta >= 0.0 && (alpha + beta) <= 1.0) return new TAO(tao, true, n);
+    if (tao > EPS && alpha >= 0.0 && beta >= 0.0 && (alpha + beta) <= 1.0) return new TAO(tao, true, n);
     return new TAO(0, false, glm::vec3(0));
 }

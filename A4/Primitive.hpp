@@ -10,16 +10,6 @@ public:
   virtual TAO *intersect(glm::vec3 eye, glm::vec3 ray);
 };
 
-class Sphere : public Primitive {
-public:
-  virtual ~Sphere();
-};
-
-class Cube : public Primitive {
-public:
-  virtual ~Cube();
-};
-
 class NonhierSphere : public Primitive {
 public:
   NonhierSphere(const glm::vec3& pos, double radius)
@@ -46,4 +36,20 @@ public:
 private:
   glm::vec3 m_pos;
   double m_size;
+};
+
+class Sphere : public Primitive {
+  NonhierSphere *nsphere;
+public:
+  Sphere();
+  virtual ~Sphere();
+  TAO *intersect(glm::vec3 eye, glm::vec3 ray);
+};
+
+class Cube : public Primitive {
+  NonhierBox *nbox;
+public:
+  Cube();
+  virtual ~Cube();
+  TAO *intersect(glm::vec3 eye, glm::vec3 ray);
 };

@@ -6,6 +6,29 @@
 
 using namespace std;
 
+TAO* traverse(SceneNode *node, glm::mat4 P, glm::vec3 eye, glm::vec3 ray) {
+	TAO *mintao = NULL;
+
+	if (node->m_nodeType == NodeType::GeometryNode) {
+		GeometryNode *gnode = static_cast<GeometryNode *>(node);
+		Primitive *prim = gnode->m_primitive;
+		P = glm::inverse(node->get_transform()) * P;
+		TAO *tao = prim->intersect(glm::vec3(P * glm::vec4(eye, 1)), glm::vec3(P * glm::vec4(ray, 0)));
+		tao->n = glm::transpose(glm::mat3(node->get_transform())) * tao->n;
+		tao->node = node;
+		return tao;
+	}
+
+	for (SceneNode *child : node->children) {
+		TAO *tao = traverse(child, glm::inverse(node->get_transform()) * P, eye, ray);
+		if (tao && tao->hit && ((mintao == NULL) || (tao->tao < mintao->tao))) mintao = tao;
+	}
+
+	if (mintao) mintao->n = glm::transpose(glm::mat3(node->get_transform())) * mintao->n;
+	return mintao;
+
+}
+
 void A4_Render(
 		// What to render
 		SceneNode * root,
@@ -51,27 +74,11 @@ void A4_Render(
 
 			GeometryNode *seenNode = NULL;
 
-			glm::vec3 pixel = eye + view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left;
+			glm::vec3 ray = glm::normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left);
 
-			glm::vec3 ray = glm::normalize(pixel - eye);
-			TAO *mintao;
+			TAO *ptao = traverse(root, glm::mat4(), eye, ray);
 
-			for (SceneNode *node : root->children) {
-
-				if (node->m_nodeType == NodeType::GeometryNode) {
-
-					GeometryNode *gnode = static_cast<GeometryNode *>(node);
-					Primitive *prim = gnode->m_primitive;
-					TAO *tao = prim->intersect(eye, ray);
-
-					if (tao->hit && ((seenNode == NULL) || (tao->tao < mintao->tao))) {
-						seenNode = gnode;
-						mintao = tao;
-					}
-				}
-			}
-
-			if (seenNode == NULL) {
+			if (!ptao || ptao->node == NULL) {
 
 				// Red: increasing from top to bottom
 				image(x, y, 0) = 0.0;
@@ -82,9 +89,10 @@ void A4_Render(
 
 			} else {
 
-				glm::vec3 point = eye + mintao->tao * ray;
-				glm::vec3 normal = glm::normalize(mintao->n);
-				PhongMaterial *pmaterial = static_cast<PhongMaterial *>(seenNode->m_material);
+				glm::vec3 point = eye + ptao->tao * ray;
+				glm::vec3 normal = glm::normalize(ptao->n);
+				GeometryNode *gnode = static_cast<GeometryNode *>(ptao->node);
+				PhongMaterial *pmaterial = static_cast<PhongMaterial *>(gnode->m_material);
 				glm::vec3 kd = pmaterial->getkd();
 				glm::vec3 ks = pmaterial->getks();
 				double shininess = pmaterial->getsh();
@@ -93,25 +101,11 @@ void A4_Render(
 				for (Light *light : lights) {
 					glm::vec3 lightSource = light->position;
 					glm::vec3 lightRay = glm::normalize(lightSource - point);
-					bool shadow = false;
-					glm::vec3 shadowRay = point +  EPS * (lightSource - point) + mintao->tao * (lightSource - point);
+					glm::vec3 shadowRay = EPS * (lightSource - point) + ptao->tao * (lightSource - point);
 
-					for (SceneNode *node : root->children) {
+					TAO *stao = traverse(root, glm::mat4(), point, shadowRay);
 
-						if (node->m_nodeType == NodeType::GeometryNode) {
-
-							GeometryNode *gnode = static_cast<GeometryNode *>(node);
-							Primitive *prim = gnode->m_primitive;
-							TAO *tao = prim->intersect(point, shadowRay);
-
-							if (tao->hit && gnode->m_nodeId != seenNode->m_nodeId) {
-								shadow = true;
-								break;
-							}
-						}
-					}
-
-					if (!shadow) {
+					if (!stao || !stao->hit || stao->node == ptao->node) {
 						glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
 						double distance = glm::length(lightSource - point);
 						glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);

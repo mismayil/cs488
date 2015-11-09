@@ -14,8 +14,24 @@ TAO* Primitive::intersect(glm::vec3 eye, glm::vec3 ray) {
     return new TAO(0, false, glm::vec3(0));
 }
 
+Sphere::Sphere() {
+    nsphere = new NonhierSphere(glm::vec3(0), 1.0);
+}
+
 Sphere::~Sphere()
 {
+}
+
+TAO* Sphere::intersect(glm::vec3 eye, glm::vec3 ray) {
+    return nsphere->intersect(eye, ray);
+}
+
+Cube::Cube() {
+    nbox = new NonhierBox(glm::vec3(0), 1.0);
+}
+
+TAO* Cube::intersect(glm::vec3 eye, glm::vec3 ray) {
+    return nbox->intersect(eye, ray);
 }
 
 Cube::~Cube()
