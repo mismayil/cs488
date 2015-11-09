@@ -104,7 +104,7 @@ TAO* NonhierBox::intersect(glm::vec3 eye, glm::vec3 ray) {
         if (M.tao > maxtaos[i].tao) M = maxtaos[i];
     }
 
-    if (m.tao <= M.tao) return new TAO(m.tao, m.hit, m.n);
+    if (m.tao <= M.tao && m.tao >= 0) return new TAO(m.tao, m.hit, m.n);
 
     return new TAO(0, false, glm::vec3(0));
 }

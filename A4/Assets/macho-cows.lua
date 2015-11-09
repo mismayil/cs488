@@ -42,7 +42,7 @@ s:translate(0, 4, 0)
 -- Read in the cow model from a separate file.
 -- #############################################
 
-cow_poly = gr.mesh('cow', 'cow.obj')
+cow_poly = gr.mesh('cow', 'Assets/cow.obj')
 factor = 2.0/(2.76+3.637)
 
 cow_poly:set_material(hide)
@@ -60,7 +60,7 @@ scene:rotate('X', 23)
 
 -- the floor
 
-plane = gr.mesh('plane', 'plane.obj' )
+plane = gr.mesh('plane', 'Assets/plane.obj' )
 scene:add_child(plane)
 plane:set_material(grass)
 plane:scale(30, 30, 30)
@@ -69,7 +69,7 @@ plane:scale(30, 30, 30)
 -- buckyball at the centre of the real Stonehenge was destroyed
 -- in the great fire of 733 AD.
 
-buckyball = gr.mesh( 'buckyball', 'buckyball.obj' )
+buckyball = gr.mesh( 'buckyball', 'Assets/buckyball.obj' )
 scene:add_child(buckyball)
 buckyball:set_material(stone)
 buckyball:scale(1.5, 1.5, 1.5)
@@ -89,7 +89,7 @@ for _, pt in pairs({
    cow_instance:scale(1.4, 1.4, 1.4)
    cow_instance:rotate('Y', pt[2])
    cow_instance:translate(table.unpack(pt[1]))
-   
+
    cow_number = cow_number + 1
 end
 

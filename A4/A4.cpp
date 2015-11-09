@@ -6,25 +6,24 @@
 
 using namespace std;
 
-TAO* traverse(SceneNode *node, glm::mat4 P, glm::vec3 eye, glm::vec3 ray) {
+TAO* traverse(SceneNode *node, glm::vec4 eye, glm::vec4 ray) {
 	TAO *mintao = NULL;
 
 	if (node->m_nodeType == NodeType::GeometryNode) {
 		GeometryNode *gnode = static_cast<GeometryNode *>(node);
 		Primitive *prim = gnode->m_primitive;
-		P = glm::inverse(node->get_transform()) * P;
-		TAO *tao = prim->intersect(glm::vec3(P * glm::vec4(eye, 1)), glm::vec3(P * glm::vec4(ray, 0)));
-		tao->n = glm::transpose(glm::mat3(node->get_transform())) * tao->n;
+		TAO *tao = prim->intersect(glm::vec3(node->get_inverse() * eye), glm::vec3(node->get_inverse() * ray));
+		tao->n = glm::transpose(glm::mat3(node->get_inverse())) * tao->n;
 		tao->node = node;
 		return tao;
 	}
 
 	for (SceneNode *child : node->children) {
-		TAO *tao = traverse(child, glm::inverse(node->get_transform()) * P, eye, ray);
+		TAO *tao = traverse(child, node->get_inverse() * eye, node->get_inverse() * ray);
 		if (tao && tao->hit && ((mintao == NULL) || (tao->tao < mintao->tao))) mintao = tao;
 	}
 
-	if (mintao) mintao->n = glm::transpose(glm::mat3(node->get_transform())) * mintao->n;
+	if (mintao) mintao->n = glm::transpose(glm::mat3(node->get_inverse())) * mintao->n;
 	return mintao;
 
 }
@@ -76,49 +75,43 @@ void A4_Render(
 
 			glm::vec3 ray = glm::normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left);
 
-			TAO *ptao = traverse(root, glm::mat4(), eye, ray);
+			TAO *ptao = traverse(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
 
-			if (!ptao || ptao->node == NULL) {
+			image(x, y, 0) = 0.0;
+			image(x, y, 1) = 0.0;
+			image(x, y, 2) = 1.0;
 
-				// Red: increasing from top to bottom
-				image(x, y, 0) = 0.0;
-				// Green: increasing from left to right
-				image(x, y, 1) = 0.0;
-				// Blue: in lower-left and upper-right corners
-				image(x, y, 2) = 1.0;
+			if (!ptao || ptao->node == NULL) continue;
 
-			} else {
+			glm::vec3 point = eye + ptao->tao * ray;
+			glm::vec3 normal = glm::normalize(ptao->n);
+			GeometryNode *gnode = static_cast<GeometryNode *>(ptao->node);
+			PhongMaterial *pmaterial = static_cast<PhongMaterial *>(gnode->m_material);
+			glm::vec3 kd = pmaterial->getkd();
+			glm::vec3 ks = pmaterial->getks();
+			double shininess = pmaterial->getsh();
+			glm::vec3 colour = kd * ambient;
 
-				glm::vec3 point = eye + ptao->tao * ray;
-				glm::vec3 normal = glm::normalize(ptao->n);
-				GeometryNode *gnode = static_cast<GeometryNode *>(ptao->node);
-				PhongMaterial *pmaterial = static_cast<PhongMaterial *>(gnode->m_material);
-				glm::vec3 kd = pmaterial->getkd();
-				glm::vec3 ks = pmaterial->getks();
-				double shininess = pmaterial->getsh();
-				glm::vec3 colour = kd * ambient;
+			for (Light *light : lights) {
+				glm::vec3 lightSource = light->position;
+				glm::vec3 lightRay = glm::normalize(lightSource - point);
+				glm::vec3 shadowRay = EPS * lightRay + ptao->tao * lightRay;
 
-				for (Light *light : lights) {
-					glm::vec3 lightSource = light->position;
-					glm::vec3 lightRay = glm::normalize(lightSource - point);
-					glm::vec3 shadowRay = EPS * (lightSource - point) + ptao->tao * (lightSource - point);
+				TAO *stao = traverse(root, glm::vec4(point, 1), glm::vec4(shadowRay, 0));
 
-					TAO *stao = traverse(root, glm::mat4(), point, shadowRay);
-
-					if (!stao || !stao->hit || stao->node == ptao->node) {
-						glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
-						double distance = glm::length(lightSource - point);
-						glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
-						glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay, normal), 0.0) * intensity;
-						glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
-						colour += diffuse + specular;
-					}
+				if (!stao || !stao->hit || stao->node->m_nodeId == ptao->node->m_nodeId) {
+					glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
+					double distance = glm::length(lightSource - point);
+					glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
+					glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay, normal), 0.0) * intensity;
+					glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflection, glm::normalize(eye - point)), 0.0), shininess) * intensity;
+					colour += diffuse + specular;
 				}
-
-				image(x, y, 0) = MIN(colour.x, 1.0);
-				image(x, y, 1) = MIN(colour.y, 1.0);
-				image(x, y, 2) = MIN(colour.z, 1.0);
 			}
+
+			image(x, y, 0) = MIN(colour.x, 1.0);
+			image(x, y, 1) = MIN(colour.y, 1.0);
+			image(x, y, 2) = MIN(colour.z, 1.0);
 		}
 	}
 
