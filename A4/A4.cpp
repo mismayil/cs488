@@ -68,7 +68,8 @@ void A4_Render(
 	up = glm::normalize(up);
 	glm::vec3 left = glm::normalize(glm::cross(view, up));
 
-	int a = w / 2, b = w / 2 + 5, c = h / 2 - 100, d = h / 2 - 100 + 5;
+	int progress = 0;
+	cout << "progress: " << progress << " %"<< endl;
 
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
@@ -79,15 +80,9 @@ void A4_Render(
 
 			TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
 
-			if (x >= a && x <= b && y >= c && y <= d) {
-				image(x, y, 0) = 0.9;
-				image(x, y, 1) = 0.9;
-				image(x, y, 2) = 0.0;
-			} else {
-				image(x, y, 0) = 0.95;
-				image(x, y, 1) = 0.25;
-				image(x, y, 2) = 0.25;
-			}
+			image(x, y, 0) = 2 * y * 0.5 / h;
+			image(x, y, 1) = 2 * x * 0.3 / w;
+			image(x, y, 2) = 2 * (x + y) * 0.1 / (h + w);
 
 			if (!ptao || ptao->node == NULL) continue;
 
@@ -134,7 +129,14 @@ void A4_Render(
 			image(x, y, 0) = MIN(colour.x / (SAMPLE * SAMPLE), 1.0);
 			image(x, y, 1) = MIN(colour.y / (SAMPLE * SAMPLE), 1.0);
 			image(x, y, 2) = MIN(colour.z / (SAMPLE * SAMPLE), 1.0);
+
+			if (100 * (y+1) * (x+1) / ((h+1) * (w+1)) > (progress + 10)) {
+				progress += 10;
+				cout << "progress: " << progress << " %"<< endl;
+			}
 		}
 	}
+
+	cout << "progress: 100 %" << endl;
 
 }

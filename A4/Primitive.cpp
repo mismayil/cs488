@@ -4,8 +4,6 @@
 
 using namespace std;
 
-
-
 Primitive::~Primitive()
 {
 }
@@ -60,7 +58,8 @@ NonhierBox::~NonhierBox()
 
 TAO* NonhierBox::intersect(glm::vec3 eye, glm::vec3 ray) {
     vector<slab> slabs;
-    vector<glm::vec3> v;   // box vertices
+
+    std::vector<glm::vec3> v;   // box vertices
 
     for (float i = m_pos.x; i < m_pos.x + 2 * m_size; i += m_size) {
         for (float j = m_pos.y; j < m_pos.y + 2 * m_size; j += m_size) {
@@ -106,7 +105,8 @@ TAO* NonhierBox::intersect(glm::vec3 eye, glm::vec3 ray) {
 
     if (m.tao <= M.tao && m.tao >= 0) return new TAO(m.tao, m.hit, m.n);
 
-    return new TAO(0, false, glm::vec3(0));
+    return new TAO(0, false, glm::vec3());
+    //return box->intersect(eye, ray);
 }
 
 
@@ -124,7 +124,7 @@ BoundedBox::BoundedBox(vector<glm::vec3> v) {
     }
 }
 
-bool BoundedBox::intersect(glm::vec3 eye, glm::vec3 ray) {
+TAO* BoundedBox::intersect(glm::vec3 eye, glm::vec3 ray) {
     double ax = 1.0 / ray.x;
     double ay = 1.0 / ray.y;
     double az = 1.0 / ray.z;
@@ -155,6 +155,19 @@ bool BoundedBox::intersect(glm::vec3 eye, glm::vec3 ray) {
         tzmax = az * (zmin - eye.z);
     }
 
-    if (txmin > tymax || tymin > txmax || txmin > tzmax || tzmin > txmax || tymin > tzmax || tzmin > tymax) return false;
-    return true;
+    double M = MIN(MIN(txmax, tymax), MIN(tymax, tzmax));
+    double m = MAX(MAX(txmin, tymin), MAX(tymin, tzmin));
+
+    glm::vec3 n;
+
+    if (m > txmin - EPS && m < txmin + EPS) n = glm::vec3(-1, 0, 0);
+    if (m > txmax - EPS && m < txmax + EPS) n = glm::vec3(1, 0, 0);
+    if (m > tymin - EPS && m < tymin + EPS) n = glm::vec3(0, -1, 0);
+    if (m > tymax - EPS && m < tymax + EPS) n = glm::vec3(0, 1, 0);
+    if (m > tzmin - EPS && m < tzmin + EPS) n = glm::vec3(0, 0, -1);
+    if (m > tzmax - EPS && m < tzmax + EPS) n = glm::vec3(0, 0, 1);
+
+    if (m > M || m < EPS) return new TAO(0, false, glm::vec3(0));
+
+    return new TAO(m, true, n);
 }
