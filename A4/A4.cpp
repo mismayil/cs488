@@ -80,9 +80,9 @@ void A4_Render(
 
 			TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
 
-			image(x, y, 0) = 2 * y * 0.5 / h;
-			image(x, y, 1) = 2 * x * 0.3 / w;
-			image(x, y, 2) = 2 * (x + y) * 0.1 / (h + w);
+			image(x, y, 0) = 3 * y * 0.7 / h;
+			image(x, y, 1) = 4 * x * 0.2 / w;
+			image(x, y, 2) = 5 * (x + y) * 0.9 / (h + w);
 
 			if (!ptao || ptao->node == NULL) continue;
 

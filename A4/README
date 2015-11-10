@@ -1,0 +1,17 @@
+Compile:
+    make [OPT=[01]] [AABB=[01]]
+    You can specify whether you want to turn on acceleration(OPT) or not and whether you want to render only axis aligned bounded boxes(AABB) instead of meshes.
+    By default, OPT=1 and AABB=0
+Run:
+    ./A4 lua-file
+    Note: I have changed all paths relative to Assets directory, so please run them inside A4, not Assets!
+
+Lab computer: gl35
+
+Extra feature:
+    All features have been implemented and as an extra feature I implemented supersampling over 9 rays (3x3 grid).
+
+Acceleration:
+    Acceleration is enabled by default. If you want to switch it off, just compile with OPT=0.
+    Note that AABB will not work if OPT is turned off.
+    I could not include timin

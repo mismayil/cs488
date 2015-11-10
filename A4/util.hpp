@@ -3,7 +3,7 @@
 #include <math.h>
 #include <glm/glm.hpp>
 
-#define EPS 0.1
+#define EPS 0.00001
 #define SAMPLE 3
 #define MAX(a, b) (a < b ? b : a)
 #define MIN(a, b) (a < b ? a : b)
