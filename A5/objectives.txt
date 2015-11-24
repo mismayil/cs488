@@ -1,0 +1,16 @@
+Objectives:
+
+1. Mirror reflection
+2. Refraction
+3. Texture mapping
+4. Soft shadow
+5. adaptive antialiasing (Stochastic sampling)
+6. Additional primitives
+7. Caustics
+8. Depth of field (focus)
+9. CSG
+10. Bump mapping
+11. Motion blur
+12. Uniform Spatial subdivision
+13. Radiosity
+14. Phong normal interpolation

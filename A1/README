@@ -1,11 +1,11 @@
 Compilation
 ===========
-To compile:
+To compile: 
 	premake4 gmake
 	make
-To run:
-	./A2
+To run: 
+	./A1
 
 Manual
 ======
-No new functionality.
+New Functionality: Mouse Right Click will rotate the grid around x axis.
