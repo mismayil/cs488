@@ -1,9 +1,9 @@
 Compile:
     make [OPT=[01]] [AABB=[01]]
-    You can specify whether you want to turn on acceleration(OPT) or not and whether you want to render only axis aligned bounded boxes(AABB) instead of meshes.
+    You can specify whether you want to turn on acceleration(OPT) and whether you want to render only axis aligned bounded boxes(AABB) instead of meshes.
     By default, OPT=1 and AABB=0
 Run:
-    ./A4 lua-file
+    ./A5 lua-file
     Note: I have changed all paths relative to Assets directory, so please run them inside A4, not Assets!
 
 Lab computer: gl35
