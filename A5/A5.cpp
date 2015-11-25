@@ -35,7 +35,7 @@ glm::vec3 trace(SceneNode *root, glm::vec3 source, glm::vec3 ray, list<Light *> 
 
 	TAO *ptao = intersect(root, glm::vec4(source, 1), glm::vec4(ray, 0));
 
-	if (!ptao || ptao->node == NULL) return glm::vec3(0.5f, 0.5f, 0.5f);
+	if (!ptao || ptao->node == NULL) return colour;
 
 	glm::vec3 point = source + ptao->tao * ray;
 	glm::vec3 normal = glm::normalize(ptao->n);
@@ -43,7 +43,7 @@ glm::vec3 trace(SceneNode *root, glm::vec3 source, glm::vec3 ray, list<Light *> 
 	PhongMaterial *pmaterial = static_cast<PhongMaterial *>(gnode->m_material);
 	kd = pmaterial->getkd();
 	ks = pmaterial->getks();
-	//double shininess = pmaterial->getsh();
+	double shininess = pmaterial->getsh();
 
 	for (Light *light : lights) {
 		glm::vec3 lightSource = light->position;
@@ -53,21 +53,20 @@ glm::vec3 trace(SceneNode *root, glm::vec3 source, glm::vec3 ray, list<Light *> 
 		TAO *stao = intersect(root, glm::vec4(point, 1), glm::vec4(shadowRay, 0));
 
 		if (!stao || !stao->hit) {
-			//glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
+			glm::vec3 reflection = glm::normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
 			double distance = glm::length(lightSource - point);
 			glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
 			glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay, normal), 0.0) * intensity;
-			//glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflection, glm::normalize(source - point)), 0.0), shininess) * intensity;
-			//colour += diffuse + specular;
-			colour += diffuse;
+			glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflection, glm::normalize(source - point)), 0.0), shininess) * intensity;
+			colour += diffuse + specular;
 		}
 	}
 
-	glm::vec3 reflectionRay = glm::normalize((point - source) + 2 * MAX(glm::dot((point - source), normal), 0.0) * normal);
+	glm::vec3 reflectionRay = glm::normalize(-(source - point) + 2 * glm::dot((source - point), normal) * normal);
 	glm::vec3 reflection = ks * trace(root, point, (EPS + ptao->tao) * reflectionRay, lights, ambient, depth + 1);
-	//cout << reflection.x << " " << reflection.y << " " << reflection.z << endl;
+	colour += reflection;
 
-	colour += kd * ambient + reflection;
+	if (depth == 0) colour += kd * ambient;
 
 	return colour;
 }
@@ -118,17 +117,17 @@ void A4_Render(
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
 
-			// GeometryNode *seenNode = NULL;
-			//
-			// glm::vec3 ray = glm::normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left);
-			//
-			// TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
-			//
-			// image(x, y, 0) = 3 * y * 0.7 / h;
-			// image(x, y, 1) = 4 * x * 0.2 / w;
-			// image(x, y, 2) = 5 * (x + y) * 0.9 / (h + w);
-			//
-			// if (!ptao || ptao->node == NULL) continue;
+			GeometryNode *seenNode = NULL;
+
+			glm::vec3 ray = glm::normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left);
+
+			TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
+
+			image(x, y, 0) = 3 * y * 0.7 / h;
+			image(x, y, 1) = 4 * x * 0.2 / w;
+			image(x, y, 2) = 5 * (x + y) * 0.9 / (h + w);
+
+			if (!ptao || ptao->node == NULL) continue;
 
 			glm::vec3 colour = glm::vec3(0);
 
@@ -142,10 +141,6 @@ void A4_Render(
 			image(x, y, 0) = MIN(colour.x / (SAMPLE * SAMPLE), 1.0);
 			image(x, y, 1) = MIN(colour.y / (SAMPLE * SAMPLE), 1.0);
 			image(x, y, 2) = MIN(colour.z / (SAMPLE * SAMPLE), 1.0);
-			// colour += trace(root, eye, ray, lights, ambient, 0);
-			// image(x, y, 0) = MIN(colour.x, 1.0);
-			// image(x, y, 1) = MIN(colour.y, 1.0);
-			// image(x, y, 2) = MIN(colour.z, 1.0);
 
 			if (100 * (y+1) * (x+1) / ((h+1) * (w+1)) > (progress + 10)) {
 				progress += 10;
