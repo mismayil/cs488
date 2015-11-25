@@ -27,7 +27,7 @@ TAO* intersect(SceneNode *node, glm::vec4 eye, glm::vec4 ray) {
 	return mintao;
 }
 
-glm::vec3 trace(SceneNode *root, glm::vec3 source, glm::vec3 ray, list<Light *> &lights, const glm::vec3 & ambient, int depth) {
+glm::vec3 trace(SceneNode *root, glm::vec3 source, glm::vec3 ray, list<Light *> &lights, const glm::vec3 &ambient, int depth) {
 	glm::vec3 colour = glm::vec3(0);
 	glm::vec3 kd, ks;
 
@@ -35,7 +35,7 @@ glm::vec3 trace(SceneNode *root, glm::vec3 source, glm::vec3 ray, list<Light *> 
 
 	TAO *ptao = intersect(root, glm::vec4(source, 1), glm::vec4(ray, 0));
 
-	if (!ptao || ptao->node == NULL) return colour;
+	if (!ptao || ptao->node == NULL) return glm::vec3(0.5f, 0.5f, 0.5f);
 
 	glm::vec3 point = source + ptao->tao * ray;
 	glm::vec3 normal = glm::normalize(ptao->n);
@@ -118,23 +118,23 @@ void A4_Render(
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
 
-			GeometryNode *seenNode = NULL;
-
-			glm::vec3 ray = glm::normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left);
-
-			TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
-
-			image(x, y, 0) = 3 * y * 0.7 / h;
-			image(x, y, 1) = 4 * x * 0.2 / w;
-			image(x, y, 2) = 5 * (x + y) * 0.9 / (h + w);
-
-			if (!ptao || ptao->node == NULL) continue;
+			// GeometryNode *seenNode = NULL;
+			//
+			// glm::vec3 ray = glm::normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left);
+			//
+			// TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
+			//
+			// image(x, y, 0) = 3 * y * 0.7 / h;
+			// image(x, y, 1) = 4 * x * 0.2 / w;
+			// image(x, y, 2) = 5 * (x + y) * 0.9 / (h + w);
+			//
+			// if (!ptao || ptao->node == NULL) continue;
 
 			glm::vec3 colour = glm::vec3(0);
 
 			for (int i = 0; i < SAMPLE; i++) {
 				for (int j = 0; j < SAMPLE; j++) {
-					ray = glm::normalize(view + (-1 + 2 * (y + (0.5 + i) / SAMPLE) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (x + (0.5 + j) / SAMPLE) / w) * tan(RAD(fovy / 2)) * left);
+					glm::vec3 ray = glm::normalize(view + (-1 + 2 * (y + (0.5 + i) / SAMPLE) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (x + (0.5 + j) / SAMPLE) / w) * tan(RAD(fovy / 2)) * left);
 					colour += trace(root, eye, ray, lights, ambient, 0);
 				}
 			}
