@@ -4,8 +4,9 @@
 #include <glm/glm.hpp>
 
 #define EPS 0.00001
-#define SAMPLE 4
-#define MAX_DEPTH 10
+#define SAMPLE 3
+#define MAX_DEPTH 5
+#define AIR_REF_INDEX 1.000293
 #define MAX(a, b) (a < b ? b : a)
 #define MIN(a, b) (a < b ? a : b)
 #define RAD(a) (a * M_PI / 180)
