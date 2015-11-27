@@ -1,16 +1,17 @@
 -- A simple scene with some miscellaneous geometry.
 
-mat1 = gr.material({0.7, 1.0, 0.7}, {0.5, 0.7, 0.5}, 25, 0.5, 0)
-mat2 = gr.material({0.5, 0.5, 0.5}, {0.5, 0.7, 0.5}, 25, 1.0, 0)
-mat3 = gr.material({1.0, 0.6, 0.1}, {0.5, 0.7, 0.5}, 25, 0.5, 0)
-mat4 = gr.material({0.7, 0.6, 1.0}, {0.5, 0.4, 0.8}, 25, 0.5, 1.0)
+mat1 = gr.material({0.7, 1.0, 0.7}, {0.5, 0.7, 0.5}, 25, 0.5, 1.01)
+mat2 = gr.material({0.5, 0.5, 0.5}, {0.5, 0.7, 0.5}, 25, 1.0, 1.01)
+mat3 = gr.material({1.0, 0.6, 0.1}, {0.5, 0.7, 0.5}, 25, 0.5, 1.33)
+mat4 = gr.material({0.7, 0.6, 1.0}, {0.5, 0.4, 0.8}, 25, 0.5, 1.33)
+mat5 = gr.material({0.7, 1.0, 0.7}, {0.5, 0.7, 0.5}, 25, 0.5, 1.33)
 
 scene_root = gr.node('root')
 
 s1 = gr.nh_sphere('s1', {0, 0, -400}, 100)
-s1:translate(0, 0, 200)
+--s1:translate(0, 0, 700)
 scene_root:add_child(s1)
-s1:set_material(mat4)
+s1:set_material(mat1)
 
 s2 = gr.nh_sphere('s2', {200, 50, -100}, 150)
 scene_root:add_child(s2)
@@ -37,6 +38,7 @@ s5:set_material(mat1)
 
 steldodec = gr.mesh( 'dodec', 'Assets/smstdodeca.obj' )
 steldodec:set_material(mat3)
+--steldodec:translate(50, -150, 300)
 scene_root:add_child(steldodec)
 
 white_light = gr.light({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, {1, 0, 0})

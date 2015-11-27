@@ -69,5 +69,5 @@ TAO* Mesh::intersect(glm::vec3 eye, glm::vec3 ray) {
 
 	if (mintao) return mintao;
 
-	return new TAO(0, false, glm::vec3(0));
+	return new TAO();
 }

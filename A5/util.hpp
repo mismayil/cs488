@@ -20,7 +20,15 @@ class TAO {
         bool hit;
         glm::vec3 n;
         SceneNode *node;
+        TAO() : tao(0), hit(false), n(glm::vec3(0)), node(NULL) {}
         TAO(double tao, bool hit, glm::vec3 n) : tao(tao), hit(hit), n(n), node(NULL) {}
+};
+
+class RAY {
+    public:
+        glm::vec3 p;
+        glm::vec3 v;
+        RAY(glm::vec3 p, glm::vec3 v) : p(p), v(v) {}
 };
 
 struct plane {
@@ -31,3 +39,5 @@ struct plane {
 plane getplane(glm::vec3 a, glm::vec3 b, glm::vec3 c);
 double intersectPLane(struct plane plane, glm::vec3 eye, glm::vec3 ray);
 TAO *intersectTriangle(glm::vec3 eye, glm::vec3 ray, glm::vec3 a, glm::vec3 b, glm::vec3 c);
+void print(glm::vec3 v);
+glm::vec3 normalize(glm::vec3 v);

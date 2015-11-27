@@ -9,7 +9,7 @@ Primitive::~Primitive()
 }
 
 TAO* Primitive::intersect(glm::vec3 eye, glm::vec3 ray) {
-    return new TAO(0, false, glm::vec3(0));
+    return new TAO();
 }
 
 Sphere::Sphere() {
@@ -46,10 +46,10 @@ TAO* NonhierSphere::intersect(glm::vec3 eye, glm::vec3 ray) {
     double B = glm::dot(2.0f * (eye - m_pos), ray);
     double C = glm::dot(eye - m_pos, eye - m_pos) - m_radius * m_radius;
     size_t res = quadraticRoots(A, B, C, tao);
-    if (res == 0) return new TAO(0, false, glm::vec3(0));
-    if (res == 1) return new TAO(tao[0], tao[0] < 0 ? false : true, (eye + (float) tao[0] * ray) - m_pos);
+    if (res == 0) return new TAO();
+    if (res == 1) return new TAO(tao[0], std::isnan(tao[0]) || std::isinf(tao[0]) || tao[0] < 0 ? false : true, (eye + (float) tao[0] * ray) - m_pos);
     double mintao = MIN(tao[0], tao[1]);
-    return new TAO(mintao, mintao < 0 ? false : true, (eye + (float) mintao * ray) - m_pos);
+    return new TAO(mintao, std::isnan(mintao) || std::isinf(mintao) || mintao < 0 ? false : true, (eye + (float) mintao * ray) - m_pos);
 }
 
 NonhierBox::~NonhierBox()
@@ -118,7 +118,7 @@ TAO* BoundedBox::intersect(glm::vec3 eye, glm::vec3 ray) {
     if (m > tzmin - EPS && m < tzmin + EPS) n = glm::vec3(0, 0, 1);
     if (m > tzmax - EPS && m < tzmax + EPS) n = glm::vec3(0, 0, -1);
 
-    if (m > M || m < EPS) return new TAO(0, false, glm::vec3(0));
+    if (std::isnan(m) || std::isinf(m) || m > M || m < EPS) return new TAO();
 
     return new TAO(m, true, n);
 }
