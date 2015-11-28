@@ -89,6 +89,7 @@ OBJECTS := \
 	$(OBJDIR)/SceneNode.o \
 	$(OBJDIR)/Primitive.o \
 	$(OBJDIR)/Material.o \
+	$(OBJDIR)/TextureMaterial.o \
 
 RESOURCES := \
 
@@ -191,5 +192,8 @@ $(OBJDIR)/Primitive.o: ../Primitive.cpp
 $(OBJDIR)/Material.o: ../Material.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-
+$(OBJDIR)/TextureMaterial.o: ../TextureMaterial.cpp
+		@echo $(notdir $<)
+		$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+		
 -include $(OBJECTS:%.o=%.d)

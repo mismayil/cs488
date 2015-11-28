@@ -11,7 +11,8 @@ const uint Image::m_colorComponents = 3; // Red, blue, green
 Image::Image()
   : m_width(0),
     m_height(0),
-    m_data(0)
+    m_data(0),
+    uv(NULL)
 {
 }
 
@@ -26,6 +27,7 @@ Image::Image(
 	size_t numElements = m_width * m_height * m_colorComponents;
 	m_data = new double[numElements];
 	memset(m_data, 0, numElements*sizeof(double));
+    uv = NULL;
 }
 
 //---------------------------------------------------------------------------------------
@@ -44,6 +46,14 @@ Image::Image(const Image & other)
 Image::~Image()
 {
   delete [] m_data;
+
+  if (uv) {
+      for (uint y = 0; y < m_height; y++) {
+          delete [] uv[y];
+      }
+
+      delete [] uv;
+  }
 }
 
 //---------------------------------------------------------------------------------------
@@ -75,6 +85,10 @@ uint Image::width() const
 uint Image::height() const
 {
   return m_height;
+}
+
+glm::vec3** Image::getuv() const {
+    return uv;
 }
 
 //---------------------------------------------------------------------------------------
@@ -115,6 +129,30 @@ bool Image::savePng(const std::string & filename)
 	}
 
 	return true;
+}
+
+void Image::loadPng(const char* filename)
+{
+  std::vector<unsigned char> image; //the raw pixels
+
+  //decode
+  unsigned error = lodepng::decode(image, m_width, m_height, filename);
+
+  if(error) std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+
+  uv = new glm::vec3*[m_height];
+
+  for (uint y = 0; y < m_height; y++) {
+      uv[y] = new glm::vec3[m_width];
+  }
+
+  for (uint y = 0; y < m_height; y++) {
+      for (uint x = 0; x < m_width; x++) {
+          for (uint i = 0; i < m_colorComponents; i++) {
+              uv[y][x][i] = (float) image[(m_colorComponents + 1) * (m_width * y + x) + i] / 255.0f;
+          }
+      }
+  }
 }
 
 //---------------------------------------------------------------------------------------

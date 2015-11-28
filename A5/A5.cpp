@@ -2,6 +2,7 @@
 #include "A5.hpp"
 #include "GeometryNode.hpp"
 #include "PhongMaterial.hpp"
+#include "TextureMaterial.hpp"
 #include "util.hpp"
 
 using namespace std;
@@ -48,7 +49,18 @@ glm::vec3 trace(SceneNode *root, glm::vec3 source, glm::vec3 ray, list<Light *> 
 	glm::vec3 point = source + ptao->tao * ray;
 	glm::vec3 normal = normalize(ptao->n);
 	GeometryNode *gnode = static_cast<GeometryNode *>(ptao->node);
-	PhongMaterial *pmaterial = static_cast<PhongMaterial *>(gnode->m_material);
+	Primitive *prim = gnode->m_primitive;
+	TextureMaterial *tmaterial = dynamic_cast<TextureMaterial *>(gnode->m_material);
+
+	// if texture material
+	if (tmaterial) {
+		Image *texture = tmaterial->getImage();
+		int uv[2];
+		prim->mapuv(point, texture, uv);
+		return texture->getuv()[uv[1]][uv[0]];
+	}
+
+	PhongMaterial *pmaterial = dynamic_cast<PhongMaterial *>(gnode->m_material);
 	kd = pmaterial->getkd();
 	ks = pmaterial->getks();
 	double shininess = pmaterial->getShininess();
@@ -146,6 +158,9 @@ void A4_Render(
 	int progress = 0;
 	cout << "progress: " << progress << " %"<< endl;
 
+	// Image texture = Image();
+	// texture.loadPng("Assets/checkerboard.png");
+
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
 
@@ -155,9 +170,9 @@ void A4_Render(
 
 			TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
 
-			image(x, y, 0) = 3 * y * 0.7 / h;
-			image(x, y, 1) = 4 * x * 0.2 / w;
-			image(x, y, 2) = 5 * (x + y) * 0.9 / (h + w);
+			image(x, y, 0) = 0.5 * x / w; //texture.getuv()[y][x].x; //3 * y * 0.7 / h;
+			image(x, y, 1) = 0.5 * y / h; //texture.getuv()[y][x].y; //4 * x * 0.2 / w;
+			image(x, y, 2) = 0.5 * (x + y) / (h + w);//texture.getuv()[y][x].z; //5 * (x + y) * 0.9 / (h + w);
 
 			if (!ptao || ptao->node == NULL) continue;
 

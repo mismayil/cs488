@@ -53,6 +53,7 @@
 #include "Primitive.hpp"
 #include "Material.hpp"
 #include "PhongMaterial.hpp"
+#include "TextureMaterial.hpp"
 #include "A5.hpp"
 
 typedef std::map<std::string,Mesh*> MeshMap;
@@ -377,6 +378,25 @@ int gr_material_cmd(lua_State* L)
   return 1;
 }
 
+// Create a material
+extern "C"
+int gr_textmaterial_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+
+  gr_material_ud* data = (gr_material_ud*)lua_newuserdata(L, sizeof(gr_material_ud));
+
+  const char* filename = luaL_checkstring(L, 1);
+  data->material = 0;
+
+  data->material = new TextureMaterial(filename);
+
+  luaL_newmetatable(L, "gr.material");
+  lua_setmetatable(L, -2);
+
+  return 1;
+}
+
 // Add a child to a node
 extern "C"
 int gr_node_add_child_cmd(lua_State* L)
@@ -412,7 +432,11 @@ int gr_node_set_material_cmd(lua_State* L)
   luaL_argcheck(L, self != 0, 1, "Geometry node expected");
 
   gr_material_ud* matdata = (gr_material_ud*)luaL_checkudata(L, 2, "gr.material");
-  luaL_argcheck(L, matdata != 0, 2, "Material expected");
+  //luaL_argcheck(L, matdata != 0, 2, "Material expected");
+  if (!matdata) {
+     matdata = (gr_material_ud*)luaL_checkudata(L, 2, "gr.textmaterial");
+     luaL_argcheck(L, matdata != 0, 2, "Material or TextMaterial expected");
+  }
 
   Material* material = matdata->material;
 
@@ -527,6 +551,8 @@ static const luaL_Reg grlib_functions[] = {
   {"mesh", gr_mesh_cmd},
   {"light", gr_light_cmd},
   {"render", gr_render_cmd},
+  // New for assignment 5
+  {"textmaterial", gr_textmaterial_cmd},
   {0, 0}
 };
 

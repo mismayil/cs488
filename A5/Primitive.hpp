@@ -4,11 +4,13 @@
 #include <glm/glm.hpp>
 #include "polyroots.hpp"
 #include "util.hpp"
+#include "Image.hpp"
 
 class Primitive {
 public:
   virtual ~Primitive();
   virtual TAO *intersect(glm::vec3 eye, glm::vec3 ray);
+  virtual void mapuv(glm::vec3 point, Image *texture, int uv[2]);
 };
 
 class NonhierSphere : public Primitive {
@@ -19,6 +21,7 @@ public:
   }
   virtual ~NonhierSphere();
   TAO *intersect(glm::vec3 eye, glm::vec3 ray);
+  void mapuv(glm::vec3 point, Image *texture, int uv[2]);
 
 private:
   glm::vec3 m_pos;

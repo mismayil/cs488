@@ -12,6 +12,8 @@ TAO* Primitive::intersect(glm::vec3 eye, glm::vec3 ray) {
     return new TAO();
 }
 
+void Primitive::mapuv(glm::vec3 point, Image *texture, int uv[2]) {}
+
 Sphere::Sphere() {
     nsphere = new NonhierSphere(glm::vec3(0), 1.0);
 }
@@ -50,6 +52,23 @@ TAO* NonhierSphere::intersect(glm::vec3 eye, glm::vec3 ray) {
     if (res == 1) return new TAO(tao[0], std::isnan(tao[0]) || std::isinf(tao[0]) || tao[0] < 0 ? false : true, (eye + (float) tao[0] * ray) - m_pos);
     double mintao = MIN(tao[0], tao[1]);
     return new TAO(mintao, std::isnan(mintao) || std::isinf(mintao) || mintao < 0 ? false : true, (eye + (float) mintao * ray) - m_pos);
+}
+
+void NonhierSphere::mapuv(glm::vec3 point, Image *texture, int uv[2]) {
+    glm::vec3 vn = normalize(glm::vec3(0, m_radius, 0));
+    glm::vec3 ve = normalize(glm::vec3(m_radius, 0, 0));
+    glm::vec3 vp = normalize(point - m_pos);
+    double phi = acos(MAX(MIN(-glm::dot(vn, vp), 1), -1));
+    double v = phi / M_PI;
+    //cout << glm::dot(vp, ve) / sin(phi) << endl;
+    double theta = acos(MAX(MIN(glm::dot(vp, ve) / glm::sin(phi), 1), -1)) / (2.0 * M_PI);
+    cout << glm::dot(vp, ve) << " " << sin(phi) << endl;
+    double u;
+    if (glm::dot(glm::cross(vn, ve), vp) > 0) u = theta;
+    else u = 1 - theta;
+    //cout << u << " " << v << endl;
+    uv[0] = (int)(u * texture->width());
+    uv[1] = (int)(v * texture->height());
 }
 
 NonhierBox::~NonhierBox()
