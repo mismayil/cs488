@@ -60,13 +60,10 @@ void NonhierSphere::mapuv(glm::vec3 point, Image *texture, int uv[2]) {
     glm::vec3 vp = normalize(point - m_pos);
     double phi = acos(MAX(MIN(-glm::dot(vn, vp), 1), -1));
     double v = phi / M_PI;
-    //cout << glm::dot(vp, ve) / sin(phi) << endl;
     double theta = acos(MAX(MIN(glm::dot(vp, ve) / glm::sin(phi), 1), -1)) / (2.0 * M_PI);
-    cout << glm::dot(vp, ve) << " " << sin(phi) << endl;
     double u;
     if (glm::dot(glm::cross(vn, ve), vp) > 0) u = theta;
     else u = 1 - theta;
-    //cout << u << " " << v << endl;
     uv[0] = (int)(u * texture->width());
     uv[1] = (int)(v * texture->height());
 }
