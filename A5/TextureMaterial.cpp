@@ -1,14 +1,26 @@
 #include "TextureMaterial.hpp"
 
-TextureMaterial::TextureMaterial(const char *filename) {
-    image = new Image();
-    image->loadPng(filename);
+TextureMaterial::TextureMaterial(const char *filename, glm::vec3 ks, double shininess, double reflectiveness, double refractiveness) : PhongMaterial(glm::vec3(0), ks, shininess, reflectiveness, refractiveness) {
+    texture = new Image();
+    texture->loadPng(filename);
 }
 
 TextureMaterial::~TextureMaterial() {
-    delete image;
+    delete texture;
 }
 
-Image* TextureMaterial::getImage() {
-    return image;
+Image* TextureMaterial::getTexture() {
+    return texture;
+}
+
+void TextureMaterial::setuv(int *uv) {
+    this->uv = uv;
+}
+
+int* TextureMaterial::getuv() {
+    return uv;
+}
+
+glm::vec3 TextureMaterial::getkd() {
+    return texture->getuv()[uv[1]][uv[0]];
 }

@@ -9,8 +9,8 @@
 class Primitive {
 public:
   virtual ~Primitive();
-  virtual TAO *intersect(glm::vec3 eye, glm::vec3 ray);
-  virtual void mapuv(glm::vec3 point, Image *texture, int uv[2]);
+  virtual TAO *intersect(Ray ray);
+  virtual int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 };
 
 class NonhierSphere : public Primitive {
@@ -20,8 +20,8 @@ public:
   {
   }
   virtual ~NonhierSphere();
-  TAO *intersect(glm::vec3 eye, glm::vec3 ray);
-  void mapuv(glm::vec3 point, Image *texture, int uv[2]);
+  TAO *intersect(Ray ray);
+  int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 
 private:
   glm::vec3 m_pos;
@@ -32,7 +32,7 @@ class BoundedBox : public Primitive {
     double xmin, xmax, ymin, ymax, zmin, zmax;
 public:
     BoundedBox(std::vector<glm::vec3> v);
-    TAO *intersect(glm::vec3 eye, glm::vec3 ray);
+    TAO *intersect(Ray ray);
 };
 
 class NonhierBox : public Primitive {
@@ -54,7 +54,8 @@ public:
       box = new BoundedBox(v);
   }
   virtual ~NonhierBox();
-  TAO *intersect(glm::vec3 eye, glm::vec3 ray);
+  TAO *intersect(Ray ray);
+  int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 
 private:
   glm::vec3 m_pos;
@@ -66,7 +67,7 @@ class Sphere : public Primitive {
 public:
   Sphere();
   virtual ~Sphere();
-  TAO *intersect(glm::vec3 eye, glm::vec3 ray);
+  TAO *intersect(Ray ray);
 };
 
 class Cube : public Primitive {
@@ -74,5 +75,5 @@ class Cube : public Primitive {
 public:
   Cube();
   virtual ~Cube();
-  TAO *intersect(glm::vec3 eye, glm::vec3 ray);
+  TAO *intersect(Ray ray);
 };

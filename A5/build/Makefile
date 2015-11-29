@@ -90,6 +90,8 @@ OBJECTS := \
 	$(OBJDIR)/Primitive.o \
 	$(OBJDIR)/Material.o \
 	$(OBJDIR)/TextureMaterial.o \
+	$(OBJDIR)/TAO.o \
+	$(OBJDIR)/Ray.o \
 
 RESOURCES := \
 
@@ -195,5 +197,11 @@ $(OBJDIR)/Material.o: ../Material.cpp
 $(OBJDIR)/TextureMaterial.o: ../TextureMaterial.cpp
 		@echo $(notdir $<)
 		$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-		
+$(OBJDIR)/TAO.o: ../TAO.cpp
+		@echo $(notdir $<)
+		$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+$(OBJDIR)/Ray.o: ../Ray.cpp
+		@echo $(notdir $<)
+		$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
 -include $(OBJECTS:%.o=%.d)

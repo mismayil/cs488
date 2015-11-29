@@ -389,7 +389,14 @@ int gr_textmaterial_cmd(lua_State* L)
   const char* filename = luaL_checkstring(L, 1);
   data->material = 0;
 
-  data->material = new TextureMaterial(filename);
+  double ks[3];
+  get_tuple(L, 2, ks, 3);
+
+  double shininess = luaL_checknumber(L, 3);
+  double reflectiveness = luaL_checknumber(L, 4);
+  double refractiveness = luaL_checknumber(L, 5);
+
+  data->material = new TextureMaterial(filename, glm::vec3(ks[0], ks[1], ks[2]), shininess, reflectiveness, refractiveness);
 
   luaL_newmetatable(L, "gr.material");
   lua_setmetatable(L, -2);

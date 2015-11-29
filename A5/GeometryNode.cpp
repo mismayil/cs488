@@ -1,4 +1,5 @@
 #include "GeometryNode.hpp"
+#include "TextureMaterial.hpp"
 
 //---------------------------------------------------------------------------------------
 GeometryNode::GeometryNode(
@@ -13,15 +14,24 @@ GeometryNode::GeometryNode(
 void GeometryNode::setMaterial( Material *mat )
 {
 	// Obviously, there's a potential memory leak here.  A good solution
-	// would be to use some kind of reference counting, as in the 
+	// would be to use some kind of reference counting, as in the
 	// C++ shared_ptr.  But I'm going to punt on that problem here.
 	// Why?  Two reasons:
 	// (a) In practice we expect the scene to be constructed exactly
 	//     once.  There's no reason to believe that materials will be
 	//     repeatedly overwritten in a GeometryNode.
-	// (b) A ray tracer is a program in which you compute once, and 
+	// (b) A ray tracer is a program in which you compute once, and
 	//     throw away all your data.  A memory leak won't build up and
 	//     crash the program.
 
 	m_material = mat;
+}
+
+TAO* GeometryNode::intersect(Ray ray) {
+	TAO *tao = m_primitive->intersect(ray);
+	glm::vec3 point = ray.o + (float) tao->tao * ray.d;
+	TextureMaterial *tmaterial = dynamic_cast<TextureMaterial *>(m_material);
+	if (tmaterial) tmaterial->setuv(m_primitive->mapuv(point, tao->n, tmaterial->getTexture()));
+	tao->material = m_material;
+	return tao;
 }

@@ -2,14 +2,18 @@
 
 #include <glm/glm.hpp>
 
-#include "Material.hpp"
+#include "PhongMaterial.hpp"
 #include "Image.hpp"
 
-class TextureMaterial : public Material {
+class TextureMaterial : public PhongMaterial {
 public:
-  TextureMaterial(const char *filename);
+  TextureMaterial(const char *filename, glm::vec3 ks, double shininess, double reflectiveness, double refractiveness);
   virtual ~TextureMaterial();
-  Image *getImage();
+  Image *getTexture();
+  void setuv(int *uv);
+  int *getuv();
+  glm::vec3 getkd();
 private:
-    Image *image;
+    Image *texture;
+    int *uv;
 };

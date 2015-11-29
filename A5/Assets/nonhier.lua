@@ -5,7 +5,8 @@ mat2 = gr.material({0.5, 0.5, 0.5}, {0.5, 0.7, 0.5}, 25, 1.0, 1.0)
 mat3 = gr.material({1.0, 0.6, 0.1}, {0.5, 0.7, 0.5}, 25, 0.5, 1.0)
 mat4 = gr.material({0.7, 0.6, 1.0}, {0.5, 0.4, 0.8}, 25, 0.5, 1.33)
 mat5 = gr.material({0.7, 1.0, 0.7}, {0.5, 0.7, 0.5}, 25, 0.5, 1.33)
-tmat1 = gr.textmaterial('Assets/checkerboard.png')
+tmat1 = gr.textmaterial('Assets/world.png', {0.5, 0.7, 0.5}, 25, 0.0, 1.0)
+tmat2 = gr.textmaterial('Assets/checkerboard.png', {0.5, 0.4, 0.8}, 25, 0.0, 1.33)
 
 scene_root = gr.node('root')
 
@@ -16,6 +17,7 @@ s1:set_material(mat1)
 
 s2 = gr.nh_sphere('s2', {200, 50, -100}, 150)
 scene_root:add_child(s2)
+s2:translate(-50, 20, 30)
 s2:set_material(tmat1)
 
 s3 = gr.nh_sphere('s3', {0, -1200, -500}, 1000)
@@ -25,7 +27,7 @@ s3:set_material(mat2)
 b1 = gr.nh_box('b1', {-200, -125, 0}, 100)
 scene_root:add_child(b1)
 b1:translate(100, 10, 0)
-b1:set_material(mat4)
+b1:set_material(tmat2)
 
 s4 = gr.nh_sphere('s4', {-100, 25, -300}, 50)
 scene_root:add_child(s4)

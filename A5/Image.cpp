@@ -136,7 +136,7 @@ void Image::loadPng(const char* filename)
   std::vector<unsigned char> image; //the raw pixels
 
   //decode
-  unsigned error = lodepng::decode(image, m_width, m_height, filename);
+  unsigned error = lodepng::decode(image, m_width, m_height, filename, LCT_RGB);
 
   if(error) std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
 
@@ -149,7 +149,7 @@ void Image::loadPng(const char* filename)
   for (uint y = 0; y < m_height; y++) {
       for (uint x = 0; x < m_width; x++) {
           for (uint i = 0; i < m_colorComponents; i++) {
-              uv[y][x][i] = (float) image[(m_colorComponents + 1) * (m_width * y + x) + i] / 255.0f;
+              uv[y][x][i] = (float) image[m_colorComponents * (m_width * (m_height - y - 1) + x) + i] / 255.0f;
           }
       }
   }

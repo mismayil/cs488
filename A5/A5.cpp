@@ -3,24 +3,28 @@
 #include "GeometryNode.hpp"
 #include "PhongMaterial.hpp"
 #include "TextureMaterial.hpp"
+#include "TAO.hpp"
+#include "Ray.hpp"
 #include "util.hpp"
 
 using namespace std;
 
-TAO* intersect(SceneNode *node, glm::vec4 eye, glm::vec4 ray) {
+TAO* intersect(SceneNode *node, Ray ray) {
 	TAO *mintao = NULL;
 
 	if (node->m_nodeType == NodeType::GeometryNode) {
 		GeometryNode *gnode = static_cast<GeometryNode *>(node);
-		Primitive *prim = gnode->m_primitive;
-		TAO *tao = prim->intersect(glm::vec3(node->get_inverse() * eye), glm::vec3(node->get_inverse() * ray));
+		ray.o = glm::vec3(node->get_inverse() * glm::vec4(ray.o, 1));
+		ray.d = glm::vec3(node->get_inverse() * glm::vec4(ray.d, 0));
+		TAO *tao = gnode->intersect(ray);
 		tao->n = glm::transpose(glm::mat3(node->get_inverse())) * tao->n;
-		tao->node = node;
 		return tao;
 	}
 
 	for (SceneNode *child : node->children) {
-		TAO *tao = intersect(child, node->get_inverse() * eye, node->get_inverse() * ray);
+		ray.o = glm::vec3(node->get_inverse() * glm::vec4(ray.o, 1));
+		ray.d =  glm::vec3(node->get_inverse() * glm::vec4(ray.d, 0));
+		TAO *tao = intersect(child, ray);
 		if (tao && tao->hit && ((mintao == NULL) || (tao->tao < mintao->tao))) mintao = tao;
 	}
 
@@ -36,74 +40,62 @@ bool refract(glm::vec3 d, glm::vec3 n, double eta, double etat, glm::vec3 &t) {
 	return true;
 }
 
-glm::vec3 trace(SceneNode *root, glm::vec3 source, glm::vec3 ray, list<Light *> &lights, const glm::vec3 &ambient, int depth) {
+glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3 &ambient, int depth) {
 	glm::vec3 colour = glm::vec3(0);
-	glm::vec3 kd, ks;
 
 	if (depth == MAX_DEPTH) return colour;
 
-	TAO *ptao = intersect(root, glm::vec4(source, 1), glm::vec4(ray, 0));
+	TAO *ptao = intersect(root, ray);
 
-	if (!ptao || ptao->node == NULL) return colour;
+	if (!ptao) return colour;
 
-	glm::vec3 point = source + ptao->tao * ray;
+	glm::vec3 point = ray.o + ptao->tao * ray.d;
 	glm::vec3 normal = normalize(ptao->n);
-	GeometryNode *gnode = static_cast<GeometryNode *>(ptao->node);
-	Primitive *prim = gnode->m_primitive;
-	TextureMaterial *tmaterial = dynamic_cast<TextureMaterial *>(gnode->m_material);
-
-	// if texture material
-	if (tmaterial) {
-		Image *texture = tmaterial->getImage();
-		int uv[2];
-		prim->mapuv(point, texture, uv);
-		return texture->getuv()[uv[1]][uv[0]];
-	}
-
-	PhongMaterial *pmaterial = dynamic_cast<PhongMaterial *>(gnode->m_material);
-	kd = pmaterial->getkd();
-	ks = pmaterial->getks();
+	PhongMaterial *pmaterial = static_cast<PhongMaterial *>(ptao->material);
+	glm::vec3 kd = pmaterial->getkd();
+	glm::vec3 ks = pmaterial->getks();
 	double shininess = pmaterial->getShininess();
 	double reflectiveness = pmaterial->getReflectiveness();
 	double refractiveness = pmaterial->getRefractiveness();
 
 	for (Light *light : lights) {
-		glm::vec3 lightSource = light->position;
-		glm::vec3 lightRay = normalize(lightSource - point);
-		glm::vec3 shadowRay = (EPS + ptao->tao) * lightRay;
+		Ray lightRay(light->position, normalize(light->position - point));
+		Ray shadowRay(point, (EPS + ptao->tao) * lightRay.d);
 
-		TAO *stao = intersect(root, glm::vec4(point, 1), glm::vec4(shadowRay, 0));
+		TAO *stao = intersect(root, shadowRay);
 
 		if (!stao || !stao->hit) {
-			glm::vec3 reflectionRay = normalize(-lightRay + 2.0f * glm::dot(lightRay, normal) * normal);
-			double distance = glm::length(lightSource - point);
+			Ray reflectionRay(point, normalize(-lightRay.d + 2.0f * glm::dot(lightRay.d, normal) * normal));
+			double distance = glm::length(lightRay.o - point);
 			glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
-			glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay, normal), 0.0) * intensity;
-			glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflectionRay, normalize(source - point)), 0.0), shininess) * intensity;
+			glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay.d, normal), 0.0) * intensity;
+			glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflectionRay.d, normalize(ray.o - point)), 0.0), shininess) * intensity;
 			colour += diffuse + specular;
 		}
 	}
 
-	glm::vec3 viewRay = normalize(point - source);
+	Ray viewRay(ray.o, normalize(point - ray.o));
 	glm::vec3 reflection = glm::vec3(0);
 	glm::vec3 refraction = glm::vec3(0);
 	colour += kd * ambient;
 
-	glm::vec3 reflectionRay = normalize(viewRay - 2 * glm::dot(viewRay, normal) * normal);
-	if (reflectiveness > 0) reflection = ks * trace(root, point, (EPS + ptao->tao) * reflectionRay, lights, ambient, depth + 1) * reflectiveness;
+	Ray reflectionRay(point, (EPS + ptao->tao) * normalize(viewRay.d - 2 * glm::dot(viewRay.d, normal) * normal));
+	if (reflectiveness > 0) reflection = ks * trace(root, reflectionRay, lights, ambient, depth + 1) * reflectiveness;
 
 	if (refractiveness > 1 || refractiveness < 1) {
-		glm::vec3 refractionRay;
 		double costheta = 0;
+		glm::vec3 t;
 
-		if (glm::dot(viewRay, normal) < 0) {
-			if (!refract(viewRay, normal, AIR_REF_INDEX, refractiveness, refractionRay)) return colour + reflection;
-			refraction = ks * trace(root, point, (EPS + ptao->tao) * refractionRay, lights, ambient, depth + 1);
-			costheta = -glm::dot(viewRay, normal);
+		if (glm::dot(viewRay.d, normal) < 0) {
+			if (!refract(viewRay.d, normal, AIR_REF_INDEX, refractiveness, t)) return colour + reflection;
+			Ray refractionRay(point, (EPS + ptao->tao) * t);
+			refraction = ks * trace(root, refractionRay, lights, ambient, depth + 1);
+			costheta = -glm::dot(viewRay.d, normal);
 		} else {
-			if (!refract(viewRay, -normal, refractiveness, AIR_REF_INDEX, refractionRay)) return colour + reflection;
-			refraction = ks * trace(root, point, (EPS + ptao->tao) * refractionRay, lights, ambient, depth + 1);
-			costheta = glm::dot(refractionRay, normal);
+			if (!refract(viewRay.d, -normal, refractiveness, AIR_REF_INDEX, t)) return colour + reflection;
+			Ray refractionRay(point, (EPS + ptao->tao) * t);
+			refraction = ks * trace(root, refractionRay, lights, ambient, depth + 1);
+			costheta = glm::dot(refractionRay.d, normal);
 		}
 
 		double R0 = pow(refractiveness - 1, 2) / pow(refractiveness + 1, 2);
@@ -158,30 +150,27 @@ void A4_Render(
 	int progress = 0;
 	cout << "progress: " << progress << " %"<< endl;
 
-	// Image texture = Image();
-	// texture.loadPng("Assets/checkerboard.png");
-
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
 
 			GeometryNode *seenNode = NULL;
 
-			glm::vec3 ray = normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left);
+			Ray ray(eye, normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left));
 
-			TAO *ptao = intersect(root, glm::vec4(eye, 1), glm::vec4(ray, 0));
+			TAO *ptao = intersect(root, ray);
 
-			image(x, y, 0) = 0.5 * x / w; //texture.getuv()[y][x].x; //3 * y * 0.7 / h;
-			image(x, y, 1) = 0.5 * y / h; //texture.getuv()[y][x].y; //4 * x * 0.2 / w;
-			image(x, y, 2) = 0.5 * (x + y) / (h + w);//texture.getuv()[y][x].z; //5 * (x + y) * 0.9 / (h + w);
+			image(x, y, 0) = 0.5 * x / w;
+			image(x, y, 1) = 0.5 * y / h;
+			image(x, y, 2) = 0.5 * (x + y) / (h + w);
 
-			if (!ptao || ptao->node == NULL) continue;
+			if (!ptao) continue;
 
 			glm::vec3 colour = glm::vec3(0);
 
 			for (int i = 0; i < SAMPLE; i++) {
 				for (int j = 0; j < SAMPLE; j++) {
-					glm::vec3 ray = normalize(view + (-1 + 2 * (y + (0.5 + i) / SAMPLE) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (x + (0.5 + j) / SAMPLE) / w) * tan(RAD(fovy / 2)) * left);
-					colour += trace(root, eye, ray, lights, ambient, 0);
+					Ray ray(eye, normalize(view + (-1 + 2 * (y + (0.5 + i) / SAMPLE) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (x + (0.5 + j) / SAMPLE) / w) * tan(RAD(fovy / 2)) * left));
+					colour += trace(root, ray, lights, ambient, 0);
 				}
 			}
 

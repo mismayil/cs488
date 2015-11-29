@@ -16,19 +16,19 @@ double intersectPLane(struct plane plane, glm::vec3 eye, glm::vec3 ray) {
     return -(plane.A * eye.x + plane.B * eye.y + plane.C * eye.z + plane.D) / (plane.A * ray.x + plane.B * ray.y + plane.C * ray.z);
 }
 
-TAO *intersectTriangle(glm::vec3 eye, glm::vec3 ray, glm::vec3 u, glm::vec3 v, glm::vec3 w) {
+TAO *intersectTriangle(Ray ray, glm::vec3 u, glm::vec3 v, glm::vec3 w) {
     double a = u.x - v.x;
     double b = u.y - v.y;
     double c = u.z - v.z;
     double d = u.x - w.x;
     double e = u.y - w.y;
     double f = u.z - w.z;
-    double g = ray.x;
-    double h = ray.y;
-    double i = ray.z;
-    double j = u.x - eye.x;
-    double k = u.y - eye.y;
-    double l = u.z - eye.z;
+    double g = ray.d.x;
+    double h = ray.d.y;
+    double i = ray.d.z;
+    double j = u.x - ray.o.x;
+    double k = u.y - ray.o.y;
+    double l = u.z - ray.o.z;
     double M = a * (e * i - h * f) + b * (g * f - d * i) + c * (d * h - e * g);
     double alpha = (j * (e *  i - h * f) + k * (g * f - d * i) + l * (d * h - e * g)) / M;
     double beta = (i * (a * k - j * b) + h * (j * c - a * l) + g * (b * l - k * c)) / M;
@@ -46,4 +46,10 @@ glm::vec3 normalize(glm::vec3 v) {
     glm::vec3 nv = glm::normalize(v);
     if (std::isnan(nv.x)) return v;
     return nv;
+}
+
+bool eq(double a, double b) {
+    if (a > b) return false;
+    if (a < b) return false;
+    return true;
 }
