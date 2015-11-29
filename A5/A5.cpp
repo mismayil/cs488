@@ -32,14 +32,6 @@ TAO* intersect(SceneNode *node, Ray ray) {
 	return mintao;
 }
 
-bool refract(glm::vec3 d, glm::vec3 n, double eta, double etat, glm::vec3 &t) {
-	double index = eta / etat;
-	double tmp = 1 - pow(index, 2) * (1 - pow(glm::dot(d, n), 2));
-	if (tmp < 0) return false;
-	t = normalize(index * (d - n * glm::dot(d, n)) - n * sqrt(tmp));
-	return true;
-}
-
 glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3 &ambient, int depth) {
 	glm::vec3 colour = glm::vec3(0);
 
@@ -50,8 +42,9 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 	if (!ptao) return colour;
 
 	glm::vec3 point = ray.o + ptao->tao * ray.d;
-	glm::vec3 normal = normalize(ptao->n);
 	PhongMaterial *pmaterial = static_cast<PhongMaterial *>(ptao->material);
+	PerlinNoise *perlin = pmaterial->getpn();
+	glm::vec3 normal = normalize(bump(perlin, ptao->n, point));
 	glm::vec3 kd = pmaterial->getkd();
 	glm::vec3 ks = pmaterial->getks();
 	double shininess = pmaterial->getShininess();
@@ -107,7 +100,7 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 	return colour + reflection;
 }
 
-void A4_Render(
+void A5_Render(
 		// What to render
 		SceneNode * root,
 

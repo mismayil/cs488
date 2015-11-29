@@ -7,6 +7,7 @@ PhongMaterial::PhongMaterial(
 	, m_shininess(shininess)
 	, m_reflectiveness(reflectiveness)
 	, m_refractiveness(refractiveness)
+	, p(new PerlinNoise())
 {}
 
 PhongMaterial::~PhongMaterial()
@@ -30,4 +31,8 @@ double PhongMaterial::getReflectiveness() {
 
 double PhongMaterial::getRefractiveness() {
 	return m_refractiveness;
+}
+
+PerlinNoise* PhongMaterial::getpn() {
+	return p;
 }

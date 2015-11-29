@@ -92,6 +92,7 @@ OBJECTS := \
 	$(OBJDIR)/TextureMaterial.o \
 	$(OBJDIR)/TAO.o \
 	$(OBJDIR)/Ray.o \
+	$(OBJDIR)/PerlinNoise.o \
 
 RESOURCES := \
 
@@ -203,5 +204,8 @@ $(OBJDIR)/TAO.o: ../TAO.cpp
 $(OBJDIR)/Ray.o: ../Ray.cpp
 		@echo $(notdir $<)
 		$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-
+$(OBJDIR)/PerlinNoise.o: ../PerlinNoise.cpp
+		@echo $(notdir $<)
+		$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+		
 -include $(OBJECTS:%.o=%.d)
