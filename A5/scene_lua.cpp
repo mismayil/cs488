@@ -243,6 +243,31 @@ int gr_nh_box_cmd(lua_State* L)
   return 1;
 }
 
+// Create a non-hierarchical cylinder node
+extern "C"
+int gr_nh_cylinder_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+
+  gr_node_ud* data = (gr_node_ud*)lua_newuserdata(L, sizeof(gr_node_ud));
+  data->node = 0;
+
+  const char* name = luaL_checkstring(L, 1);
+
+  glm::vec3 pos;
+  get_tuple(L, 2, &pos[0], 3);
+
+  double height = luaL_checknumber(L, 3);
+  double radius = luaL_checknumber(L, 4);
+
+  data->node = new GeometryNode(name, new NonhierCylinder(pos, height, radius));
+
+  luaL_getmetatable(L, "gr.node");
+  lua_setmetatable(L, -2);
+
+  return 1;
+}
+
 // Create a polygonal mesh node
 extern "C"
 int gr_mesh_cmd(lua_State* L)
@@ -367,10 +392,11 @@ int gr_material_cmd(lua_State* L)
   double shininess = luaL_checknumber(L, 3);
   double reflectiveness = luaL_checknumber(L, 4);
   double refractiveness = luaL_checknumber(L, 5);
+  double bumpness = luaL_checknumber(L, 6);
 
   data->material = new PhongMaterial(glm::vec3(kd[0], kd[1], kd[2]),
                                      glm::vec3(ks[0], ks[1], ks[2]),
-                                     shininess, reflectiveness, refractiveness);
+                                     shininess, reflectiveness, refractiveness, bumpness);
 
   luaL_newmetatable(L, "gr.material");
   lua_setmetatable(L, -2);
@@ -395,8 +421,9 @@ int gr_textmaterial_cmd(lua_State* L)
   double shininess = luaL_checknumber(L, 3);
   double reflectiveness = luaL_checknumber(L, 4);
   double refractiveness = luaL_checknumber(L, 5);
+  double bumpness = luaL_checknumber(L, 6);
 
-  data->material = new TextureMaterial(filename, glm::vec3(ks[0], ks[1], ks[2]), shininess, reflectiveness, refractiveness);
+  data->material = new TextureMaterial(filename, glm::vec3(ks[0], ks[1], ks[2]), shininess, reflectiveness, refractiveness, bumpness);
 
   luaL_newmetatable(L, "gr.material");
   lua_setmetatable(L, -2);
@@ -560,6 +587,7 @@ static const luaL_Reg grlib_functions[] = {
   {"render", gr_render_cmd},
   // New for assignment 5
   {"textmaterial", gr_textmaterial_cmd},
+  {"nh_cylinder", gr_nh_cylinder_cmd},
   {0, 0}
 };
 

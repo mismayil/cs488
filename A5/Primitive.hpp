@@ -14,18 +14,13 @@ public:
 };
 
 class NonhierSphere : public Primitive {
+    glm::vec3 m_pos;
+    double m_radius;
 public:
-  NonhierSphere(const glm::vec3& pos, double radius)
-    : m_pos(pos), m_radius(radius)
-  {
-  }
-  virtual ~NonhierSphere();
-  TAO *intersect(Ray ray);
-  int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
-
-private:
-  glm::vec3 m_pos;
-  double m_radius;
+    NonhierSphere(const glm::vec3& pos, double radius);
+    virtual ~NonhierSphere();
+    TAO *intersect(Ray ray);
+    int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 };
 
 class BoundedBox : public Primitive {
@@ -37,43 +32,40 @@ public:
 
 class NonhierBox : public Primitive {
     BoundedBox *box;
+    glm::vec3 m_pos;
+    double m_size;
 public:
-  NonhierBox(const glm::vec3& pos, double size)
-    : m_pos(pos), m_size(size)
-  {
-      std::vector<glm::vec3> v;   // box vertices
+    NonhierBox(const glm::vec3& pos, double size);
+    virtual ~NonhierBox();
+    TAO *intersect(Ray ray);
+    int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
+};
 
-      for (float i = m_pos.x; i < m_pos.x + 2 * m_size; i += m_size) {
-          for (float j = m_pos.y; j < m_pos.y + 2 * m_size; j += m_size) {
-              for (float k = m_pos.z; k < m_pos.z + 2 * m_size; k += m_size) {
-                  v.push_back(glm::vec3(i, j, k));
-              }
-          }
-      }
-
-      box = new BoundedBox(v);
-  }
-  virtual ~NonhierBox();
-  TAO *intersect(Ray ray);
-  int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
-
-private:
-  glm::vec3 m_pos;
-  double m_size;
+class NonhierCylinder : public Primitive {
+    glm::vec3 m_pos;
+    double m_height;
+    double m_radius;
+public:
+    NonhierCylinder(glm::vec3 pos, double height, double radius);
+    virtual ~NonhierCylinder();
+    TAO *intersect(Ray ray);
+    //int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 };
 
 class Sphere : public Primitive {
-  NonhierSphere *nsphere;
+    NonhierSphere *nsphere;
 public:
-  Sphere();
-  virtual ~Sphere();
-  TAO *intersect(Ray ray);
+    Sphere();
+    virtual ~Sphere();
+    TAO *intersect(Ray ray);
+    int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 };
 
 class Cube : public Primitive {
-  NonhierBox *nbox;
+    NonhierBox *nbox;
 public:
-  Cube();
-  virtual ~Cube();
-  TAO *intersect(Ray ray);
+    Cube();
+    virtual ~Cube();
+    TAO *intersect(Ray ray);
+    int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 };

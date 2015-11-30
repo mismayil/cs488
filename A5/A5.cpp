@@ -43,8 +43,7 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 	glm::vec3 point = ray.o + ptao->tao * ray.d;
 	PhongMaterial *pmaterial = static_cast<PhongMaterial *>(ptao->material);
-	PerlinNoise *perlin = pmaterial->getpn();
-	glm::vec3 normal = normalize(bump(perlin, ptao->n, point));
+	glm::vec3 normal = normalize(pmaterial->bump(ptao->n, point));
 	glm::vec3 kd = pmaterial->getkd();
 	glm::vec3 ks = pmaterial->getks();
 	double shininess = pmaterial->getShininess();

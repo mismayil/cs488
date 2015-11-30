@@ -4,9 +4,7 @@
 
 using namespace std;
 
-Primitive::~Primitive()
-{
-}
+Primitive::~Primitive() {}
 
 TAO* Primitive::intersect(Ray ray) {
     return new TAO();
@@ -18,12 +16,14 @@ Sphere::Sphere() {
     nsphere = new NonhierSphere(glm::vec3(0), 1.0);
 }
 
-Sphere::~Sphere()
-{
-}
+Sphere::~Sphere() {}
 
 TAO* Sphere::intersect(Ray ray) {
     return nsphere->intersect(ray);
+}
+
+int* Sphere::mapuv(glm::vec3 point, glm::vec3 n, Image *texture) {
+    return nsphere->mapuv(point, n, texture);
 }
 
 Cube::Cube() {
@@ -34,13 +34,15 @@ TAO* Cube::intersect(Ray ray) {
     return nbox->intersect(ray);
 }
 
-Cube::~Cube()
-{
+int* Cube::mapuv(glm::vec3 point, glm::vec3 n, Image *texture) {
+    return nbox->mapuv(point, n, texture);
 }
 
-NonhierSphere::~NonhierSphere()
-{
-}
+Cube::~Cube() {}
+
+NonhierSphere::NonhierSphere(const glm::vec3& pos, double radius) : m_pos(pos), m_radius(radius) {}
+
+NonhierSphere::~NonhierSphere() {}
 
 TAO* NonhierSphere::intersect(Ray ray) {
     double tao[2];
@@ -70,9 +72,21 @@ int* NonhierSphere::mapuv(glm::vec3 point, glm::vec3 n, Image *texture) {
     return uv;
 }
 
-NonhierBox::~NonhierBox()
-{
+NonhierBox::NonhierBox(const glm::vec3& pos, double size) : m_pos(pos), m_size(size) {
+    std::vector<glm::vec3> v;   // box vertices
+
+    for (float i = m_pos.x; i < m_pos.x + 2 * m_size; i += m_size) {
+        for (float j = m_pos.y; j < m_pos.y + 2 * m_size; j += m_size) {
+            for (float k = m_pos.z; k < m_pos.z + 2 * m_size; k += m_size) {
+                v.push_back(glm::vec3(i, j, k));
+            }
+        }
+    }
+
+    box = new BoundedBox(v);
 }
+
+NonhierBox::~NonhierBox() {}
 
 TAO* NonhierBox::intersect(Ray ray) {
     return box->intersect(ray);
@@ -126,6 +140,70 @@ int* NonhierBox::mapuv(glm::vec3 point, glm::vec3 n, Image *texture) {
     }
 
     return uv;
+}
+
+NonhierCylinder::NonhierCylinder(glm::vec3 pos, double height, double radius) : m_pos(pos), m_height(height), m_radius(radius) {}
+
+NonhierCylinder::~NonhierCylinder() {}
+
+TAO* NonhierCylinder::intersect(Ray ray) {
+
+    struct tn {
+        double t;
+        glm::vec3 n;
+    };
+
+    std::vector<tn> taos;
+    glm::vec3 dp = ray.o - m_pos;
+    glm::vec3 p1 = m_pos;
+    glm::vec3 p2 = p1 + glm::vec3(0, m_height, 0);
+    glm::vec3 up = normalize(p2 - p1);
+
+    glm::vec3 tmp1 = ray.d - glm::dot(ray.d, up) * up;
+    glm::vec3 tmp2 = dp - glm::dot(dp, up) * up;
+    double A = glm::dot(tmp1, tmp1);
+    double B = 2 * glm::dot(tmp1, tmp2);
+    double C = glm::dot(tmp2, tmp2) - pow(m_radius, 2);
+    double tao[2];
+    tao[0] = -1;
+    tao[1] = -1;
+
+    size_t res = quadraticRoots(A, B, C, tao);
+
+    if (res != 0) {
+        if (tao[0] >= 0) {
+            glm::vec3 q = ray.o + tao[0] * ray.d;
+            if (glm::dot(up, q - p1) > 0 && glm::dot(up, q - p2) < 0) taos.push_back({tao[0], q - glm::vec3(p1.x, p1.y, p1.z)});
+        }
+        if (tao[1] >= 0) {
+            glm::vec3 q = ray.o + tao[1] * ray.d;
+            if (glm::dot(up, q - p1) > 0 && glm::dot(up, q - p2) < 0) taos.push_back({tao[1], q - glm::vec3(p1.x, p1.y, p1.z)});
+        }
+    }
+
+    if (!eq(ray.d.y, 0.0)) {
+        tao[0] = (p1.y - ray.o.y) / ray.d.y;
+        tao[1] = (p2.y - ray.o.y) / ray.d.y;
+
+        if (tao[0] >= 0) {
+            glm::vec3 q = ray.o + tao[0] * ray.d;
+            if (glm::dot(q - p1, q - p1) < pow(m_radius, 2)) taos.push_back({tao[0], glm::vec3(0, 0, -1)});
+        }
+        if (tao[1] >= 0) {
+            glm::vec3 q = ray.o + tao[1] * ray.d;
+            if (glm::dot(q - p2, q - p2) < pow(m_radius, 2)) taos.push_back({tao[1], glm::vec3(0, 0, 1)});
+        }
+    }
+
+    if (taos.size() == 0) return new TAO();
+
+    tn mintao = taos[0];
+
+    for (int i = 0; i < taos.size(); i++) {
+        if (taos[i].t < mintao.t) mintao = taos[i];
+    }
+
+    return new TAO(mintao.t, true, mintao.n);
 }
 
 BoundedBox::BoundedBox(vector<glm::vec3> v) {
