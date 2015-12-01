@@ -12,8 +12,6 @@ using namespace std;
 glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3 &ambient, int depth) {
 	glm::vec3 colour = glm::vec3(0);
 
-	if (depth == MAX_DEPTH) return colour;
-
 	TAO *ptao = root->intersect(ray);
 
 	if (!ptao) return colour;
@@ -38,7 +36,7 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 			double distance = glm::length(lightRay.o - point);
 			glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
 			glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay.d, normal), 0.0) * intensity;
-			glm::vec3 specular =  ks * pow((float) MAX(glm::dot(reflectionRay.d, normalize(ray.o - point)), 0.0), shininess) * intensity;
+			glm::vec3 specular = ks * pow((float) MAX(glm::dot(reflectionRay.d, normalize(ray.o - point)), 0.0), shininess) * intensity;
 			colour += diffuse + specular;
 		}
 	}
@@ -48,6 +46,8 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 	glm::vec3 refraction = glm::vec3(0);
 	colour += kd * ambient;
 
+	if (depth == MAX_DEPTH) return colour;
+
 	Ray reflectionRay(point, (EPS + ptao->tao) * normalize(viewRay.d - 2 * glm::dot(viewRay.d, normal) * normal));
 	if (reflectiveness > 0) reflection = ks * trace(root, reflectionRay, lights, ambient, depth + 1) * reflectiveness;
 
@@ -55,14 +55,16 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 		double costheta = 0;
 		double eta = AIR_REF_INDEX / refractiveness;
 		glm::vec3 t;
+		glm::vec3 tmp = glm::vec3(0);
 
 		if (glm::dot(viewRay.d, normal) < 0) {
 			if (!refract(viewRay.d, normal, eta, t)) return colour + reflection;
 			Ray refractionRay(point, (EPS + ptao->tao) * t);
 			refraction = ks * trace(root, refractionRay, lights, ambient, depth + 1);
 			costheta = -glm::dot(viewRay.d, normal);
+			tmp = colour;
 		} else {
-			if (!refract(viewRay.d, -normal, 1.0 / eta, t)) return colour + reflection;
+			if (!refract(viewRay.d, -normal, 1.0 / eta, t)) return reflection;
 			Ray refractionRay(point, (EPS + ptao->tao) * t);
 			refraction = ks * trace(root, refractionRay, lights, ambient, depth + 1);
 			costheta = glm::dot(refractionRay.d, normal);
@@ -70,11 +72,51 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 		double R0 = pow(eta - 1, 2) / pow(eta + 1, 2);
 		double R = R0 + (1 - R0) * pow(1 - costheta, 5);
-
-		return colour + R * reflection + (1 - R) * refraction;
+		return tmp + R * reflection + (1 - R) * refraction;
 	}
 
 	return colour + reflection;
+}
+
+glm::vec3 process(pixel p, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec3 left, SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3 &ambient, size_t w, size_t h) {
+	vector<glm::vec3> colours;
+	glm::vec3 colour = glm::vec3(0);
+
+	for (int i = 0; i < SAMPLE; i++) {
+		for (int j = 0; j < SAMPLE; j++) {
+			glm::vec3 direction = normalize(view + (p.l + (p.r - p.l) * (p.y + (0.5 + i) / SAMPLE) / h) * up + (p.b + (p.t - p.b) * (p.x + (0.5 + j) / SAMPLE) / w) * left);
+			Ray ray(eye, direction);
+			glm::vec3 c = trace(root, ray, lights, ambient, 0);
+			colours.push_back(c);
+			colour += c;
+		}
+	}
+
+	for (int k = 0; k < colours.size(); k++) {
+		for (int m = 0; m < colours.size(); m++) {
+			glm::vec3 diff = glm::abs(colours[k] - colours[m]);
+			if (diff.x > THRESHOLD && diff.y > THRESHOLD && diff.z > THRESHOLD) goto adapt;
+		}
+	}
+
+	stop: return colour / (SAMPLE * SAMPLE);
+
+	adapt:
+		colour = glm::vec3(0);
+		double nl = p.l + (p.r - p.l) / 2;
+		double nr = p.l + (p.r - p.l) / 2;
+		double nb = p.b + (p.t - p.b) / 2;
+		double nt = p.b + (p.t - p.b) / 2;
+		pixel p1 = {p.x, p.y, p.l, nr, nb, p.t};
+		pixel p2 = {p.x, p.y, nl, p.r, nb, p.t};
+		pixel p3 = {p.x, p.y, p.l, nr, p.b, nt};
+		pixel p4 = {p.x, p.y, nl, p.r, p.b, nt};
+		colour += process(p1, eye, view, up, left, root, ray, lights, ambient, w, h);
+		colour += process(p2, eye, view, up, left, root, ray, lights, ambient, w, h);
+		colour += process(p3, eye, view, up, left, root, ray, lights, ambient, w, h);
+		colour += process(p4, eye, view, up, left, root, ray, lights, ambient, w, h);
+
+		return colour / 4;
 }
 
 void A5_Render(
@@ -117,15 +159,15 @@ void A5_Render(
 	up = normalize(up);
 	glm::vec3 left = normalize(glm::cross(view, up));
 
-	int progress = 0;
-	cout << "progress: " << progress << " %"<< endl;
+	int percent = 0;
+	cout << "progress: " << percent << " %"<< endl;
 
 	for (uint y = 0; y < h; ++y) {
 		for (uint x = 0; x < w; ++x) {
 
-			GeometryNode *seenNode = NULL;
+			pixel p = {x, y, -1, 1, -1, 1};
 
-			Ray ray(eye, normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left));
+			Ray ray(eye, normalize(view + (p.l + (p.r - p.l) * (0.5 + p.y) / h) * tan(RAD(fovy / 2)) * -up + (p.b + (p.t - p.b) * (0.5 + p.x)  / w) * tan(RAD(fovy / 2)) * left));
 
 			TAO *ptao = root->intersect(ray);
 
@@ -135,26 +177,15 @@ void A5_Render(
 
 			if (!ptao) continue;
 
-			glm::vec3 colour = glm::vec3(0);
+			glm::vec3 colour = process(p, eye, view, tan(RAD(fovy / 2)) * -up, tan(RAD(fovy / 2)) * left, root, ray, lights, ambient, w, h);
 
-			for (int i = 0; i < SAMPLE; i++) {
-				for (int j = 0; j < SAMPLE; j++) {
-					Ray ray(eye, normalize(view + (-1 + 2 * (y + (0.5 + i) / SAMPLE) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (x + (0.5 + j) / SAMPLE) / w) * tan(RAD(fovy / 2)) * left));
-					colour += trace(root, ray, lights, ambient, 0);
-				}
-			}
+			image(x, y, 0) = MIN(colour.x, 1.0);
+			image(x, y, 1) = MIN(colour.y, 1.0);
+			image(x, y, 2) = MIN(colour.z, 1.0);
 
-			image(x, y, 0) = MIN(colour.x / (SAMPLE * SAMPLE), 1.0);
-			image(x, y, 1) = MIN(colour.y / (SAMPLE * SAMPLE), 1.0);
-			image(x, y, 2) = MIN(colour.z / (SAMPLE * SAMPLE), 1.0);
-
-			if (100 * (y+1) * (x+1) / ((h+1) * (w+1)) > (progress + 10)) {
-				progress += 10;
-				cout << "progress: " << progress << " %"<< endl;
-			}
+			progress(percent, x, y, w, h);
 		}
 	}
 
 	cout << "progress: 100 %" << endl;
-
 }
