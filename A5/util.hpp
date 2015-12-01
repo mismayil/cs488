@@ -7,7 +7,7 @@
 #include "Ray.hpp"
 #include "PerlinNoise.hpp"
 
-#define EPS 1e-5
+#define EPS 1e-6
 #define SAMPLE 3
 #define MAX_DEPTH 5
 #define AIR_REF_INDEX 1.000293
@@ -28,5 +28,4 @@ TAO *intersectTriangle(Ray ray, glm::vec3 a, glm::vec3 b, glm::vec3 c);
 void print(glm::vec3 v);
 glm::vec3 normalize(glm::vec3 v);
 bool eq(double a, double b);
-bool refract(glm::vec3 d, glm::vec3 n, double eta, double etat, glm::vec3 &t);
-glm::vec3 bump(PerlinNoise *p, glm::vec3 n, glm::vec3 point);
+bool refract(glm::vec3 d, glm::vec3 n, double eta, glm::vec3 &t);

@@ -52,6 +52,17 @@ public:
     //int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 };
 
+class NonhierCone : public Primitive {
+    glm::vec3 m_apex;
+    double m_angle;
+    double m_height;
+public:
+    NonhierCone(glm::vec3 apex, double angle, double height);
+    virtual ~NonhierCone();
+    TAO *intersect(Ray ray);
+    //int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
+};
+
 class Sphere : public Primitive {
     NonhierSphere *nsphere;
 public:
@@ -68,4 +79,22 @@ public:
     virtual ~Cube();
     TAO *intersect(Ray ray);
     int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
+};
+
+class Cylinder : public Primitive {
+    NonhierCylinder *ncylinder;
+public:
+    Cylinder();
+    virtual ~Cylinder();
+    TAO *intersect(Ray ray);
+    //int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
+};
+
+class Cone : public Primitive {
+    NonhierCone *ncone;
+public:
+    Cone();
+    virtual ~Cone();
+    TAO *intersect(Ray ray);
+    //int *mapuv(glm::vec3 point, glm::vec3 n, Image *texture);
 };

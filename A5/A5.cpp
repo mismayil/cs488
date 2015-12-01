@@ -9,35 +9,12 @@
 
 using namespace std;
 
-TAO* intersect(SceneNode *node, Ray ray) {
-	TAO *mintao = NULL;
-
-	if (node->m_nodeType == NodeType::GeometryNode) {
-		GeometryNode *gnode = static_cast<GeometryNode *>(node);
-		ray.o = glm::vec3(node->get_inverse() * glm::vec4(ray.o, 1));
-		ray.d = glm::vec3(node->get_inverse() * glm::vec4(ray.d, 0));
-		TAO *tao = gnode->intersect(ray);
-		tao->n = glm::transpose(glm::mat3(node->get_inverse())) * tao->n;
-		return tao;
-	}
-
-	for (SceneNode *child : node->children) {
-		ray.o = glm::vec3(node->get_inverse() * glm::vec4(ray.o, 1));
-		ray.d =  glm::vec3(node->get_inverse() * glm::vec4(ray.d, 0));
-		TAO *tao = intersect(child, ray);
-		if (tao && tao->hit && ((mintao == NULL) || (tao->tao < mintao->tao))) mintao = tao;
-	}
-
-	if (mintao) mintao->n = glm::transpose(glm::mat3(node->get_inverse())) * mintao->n;
-	return mintao;
-}
-
 glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3 &ambient, int depth) {
 	glm::vec3 colour = glm::vec3(0);
 
 	if (depth == MAX_DEPTH) return colour;
 
-	TAO *ptao = intersect(root, ray);
+	TAO *ptao = root->intersect(ray);
 
 	if (!ptao) return colour;
 
@@ -54,7 +31,7 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 		Ray lightRay(light->position, normalize(light->position - point));
 		Ray shadowRay(point, (EPS + ptao->tao) * lightRay.d);
 
-		TAO *stao = intersect(root, shadowRay);
+		TAO *stao = root->intersect(shadowRay);
 
 		if (!stao || !stao->hit) {
 			Ray reflectionRay(point, normalize(-lightRay.d + 2.0f * glm::dot(lightRay.d, normal) * normal));
@@ -76,21 +53,22 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 	if (refractiveness > 1 || refractiveness < 1) {
 		double costheta = 0;
+		double eta = AIR_REF_INDEX / refractiveness;
 		glm::vec3 t;
 
 		if (glm::dot(viewRay.d, normal) < 0) {
-			if (!refract(viewRay.d, normal, AIR_REF_INDEX, refractiveness, t)) return colour + reflection;
+			if (!refract(viewRay.d, normal, eta, t)) return colour + reflection;
 			Ray refractionRay(point, (EPS + ptao->tao) * t);
 			refraction = ks * trace(root, refractionRay, lights, ambient, depth + 1);
 			costheta = -glm::dot(viewRay.d, normal);
 		} else {
-			if (!refract(viewRay.d, -normal, refractiveness, AIR_REF_INDEX, t)) return colour + reflection;
+			if (!refract(viewRay.d, -normal, 1.0 / eta, t)) return colour + reflection;
 			Ray refractionRay(point, (EPS + ptao->tao) * t);
 			refraction = ks * trace(root, refractionRay, lights, ambient, depth + 1);
 			costheta = glm::dot(refractionRay.d, normal);
 		}
 
-		double R0 = pow(refractiveness - 1, 2) / pow(refractiveness + 1, 2);
+		double R0 = pow(eta - 1, 2) / pow(eta + 1, 2);
 		double R = R0 + (1 - R0) * pow(1 - costheta, 5);
 
 		return colour + R * reflection + (1 - R) * refraction;
@@ -149,7 +127,7 @@ void A5_Render(
 
 			Ray ray(eye, normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x)  / w) * tan(RAD(fovy / 2)) * left));
 
-			TAO *ptao = intersect(root, ray);
+			TAO *ptao = root->intersect(ray);
 
 			image(x, y, 0) = 0.5 * x / w;
 			image(x, y, 1) = 0.5 * y / h;

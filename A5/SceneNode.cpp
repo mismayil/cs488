@@ -102,7 +102,7 @@ void SceneNode::scale(const glm::vec3 & amount) {
 
 //---------------------------------------------------------------------------------------
 void SceneNode::translate(const glm::vec3& amount) {
-	set_transform( trans * glm::translate(amount) );
+	set_transform( glm::translate(amount) * trans);
 }
 
 
@@ -133,4 +133,19 @@ std::ostream & operator << (std::ostream & os, const SceneNode & node) {
 
 	os << "]\n";
 	return os;
+}
+
+TAO* SceneNode::intersect(Ray ray) {
+    TAO *mintao = NULL;
+
+    ray.o = glm::vec3(get_inverse() * glm::vec4(ray.o, 1));
+    ray.d = glm::vec3(get_inverse() * glm::vec4(ray.d, 0));
+
+    for (SceneNode *child : children) {
+        TAO *tao = child->intersect(ray);
+        if (tao && tao->hit && ((mintao == NULL) || (tao->tao < mintao->tao))) mintao = tao;
+    }
+
+    if (mintao) mintao->n = glm::transpose(glm::mat3(get_inverse())) * mintao->n;
+    return mintao;
 }

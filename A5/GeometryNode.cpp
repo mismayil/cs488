@@ -28,10 +28,18 @@ void GeometryNode::setMaterial( Material *mat )
 }
 
 TAO* GeometryNode::intersect(Ray ray) {
+	ray.o = glm::vec3(get_inverse() * glm::vec4(ray.o, 1));
+	ray.d = glm::vec3(get_inverse() * glm::vec4(ray.d, 0));
+
 	TAO *tao = m_primitive->intersect(ray);
 	glm::vec3 point = ray.o + (float) tao->tao * ray.d;
+
 	TextureMaterial *tmaterial = dynamic_cast<TextureMaterial *>(m_material);
+
 	if (tmaterial) tmaterial->setuv(m_primitive->mapuv(point, tao->n, tmaterial->getTexture()));
+
 	tao->material = m_material;
+	tao->n = glm::transpose(glm::mat3(get_inverse())) * tao->n;
+
 	return tao;
 }

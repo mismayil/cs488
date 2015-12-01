@@ -54,26 +54,9 @@ bool eq(double a, double b) {
     return true;
 }
 
-bool refract(glm::vec3 d, glm::vec3 n, double eta, double etat, glm::vec3 &t) {
-	double index = eta / etat;
-	double tmp = 1 - pow(index, 2) * (1 - pow(glm::dot(d, n), 2));
+bool refract(glm::vec3 d, glm::vec3 n, double eta, glm::vec3 &t) {
+	double tmp = 1 - pow(eta, 2) * (1 - pow(glm::dot(d, n), 2));
 	if (tmp < 0) return false;
-	t = normalize(index * (d - n * glm::dot(d, n)) - n * sqrt(tmp));
+	t = normalize(eta * (d - n * glm::dot(d, n)) - n * sqrt(tmp));
 	return true;
-}
-
-glm::vec3 bump(PerlinNoise *p, glm::vec3 n, glm::vec3 point) {
-	glm::vec3 nn, pp;
-	float bump = 1.0f;
-	pp = 0.1f * point;
-	double noiseCoefx = p->noise(pp.x, pp.y, pp.z);
-	double noiseCoefy = p->noise(pp.y, pp.z, pp.x);
-	double noiseCoefz = p->noise(pp.z, pp.x, pp.y);
-	nn.x = (1.0f - bump) * nn.x + bump * noiseCoefx;
-	nn.y = (1.0f - bump) * nn.y + bump * noiseCoefy;
-	nn.z = (1.0f - bump) * nn.z + bump * noiseCoefz;
-	double tmp = glm::dot(nn, nn);
-	if (eq(tmp, 0.0)) return nn;
-	tmp = 1.0 / sqrt(tmp);
-	return (float) tmp + nn;
 }

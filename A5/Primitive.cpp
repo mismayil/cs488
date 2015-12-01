@@ -16,7 +16,9 @@ Sphere::Sphere() {
     nsphere = new NonhierSphere(glm::vec3(0), 1.0);
 }
 
-Sphere::~Sphere() {}
+Sphere::~Sphere() {
+    delete nsphere;
+}
 
 TAO* Sphere::intersect(Ray ray) {
     return nsphere->intersect(ray);
@@ -38,7 +40,33 @@ int* Cube::mapuv(glm::vec3 point, glm::vec3 n, Image *texture) {
     return nbox->mapuv(point, n, texture);
 }
 
-Cube::~Cube() {}
+Cube::~Cube() {
+    delete nbox;
+}
+
+Cylinder::Cylinder() {
+    ncylinder = new NonhierCylinder(glm::vec3(0), 1, 1);
+}
+
+Cylinder::~Cylinder() {
+    delete ncylinder;
+}
+
+TAO* Cylinder::intersect(Ray ray) {
+    return ncylinder->intersect(ray);
+}
+
+Cone::Cone() {
+    ncone = new NonhierCone(glm::vec3(0), 30, 1);
+}
+
+Cone::~Cone() {
+    delete ncone;
+}
+
+TAO* Cone::intersect(Ray ray) {
+    return ncone->intersect(ray);
+}
 
 NonhierSphere::NonhierSphere(const glm::vec3& pos, double radius) : m_pos(pos), m_radius(radius) {}
 
@@ -173,11 +201,11 @@ TAO* NonhierCylinder::intersect(Ray ray) {
     if (res != 0) {
         if (tao[0] >= 0) {
             glm::vec3 q = ray.o + tao[0] * ray.d;
-            if (glm::dot(up, q - p1) > 0 && glm::dot(up, q - p2) < 0) taos.push_back({tao[0], q - glm::vec3(p1.x, p1.y, p1.z)});
+            if (glm::dot(up, q - p1) > 0 && glm::dot(up, q - p2) < 0) taos.push_back({tao[0], glm::vec3(q.x - p1.x, 0, q.z - p1.z)});
         }
         if (tao[1] >= 0) {
             glm::vec3 q = ray.o + tao[1] * ray.d;
-            if (glm::dot(up, q - p1) > 0 && glm::dot(up, q - p2) < 0) taos.push_back({tao[1], q - glm::vec3(p1.x, p1.y, p1.z)});
+            if (glm::dot(up, q - p1) > 0 && glm::dot(up, q - p2) < 0) taos.push_back({tao[1], glm::vec3(q.x - p1.x, 0, q.z - p1.z)});
         }
     }
 
@@ -187,11 +215,70 @@ TAO* NonhierCylinder::intersect(Ray ray) {
 
         if (tao[0] >= 0) {
             glm::vec3 q = ray.o + tao[0] * ray.d;
-            if (glm::dot(q - p1, q - p1) < pow(m_radius, 2)) taos.push_back({tao[0], glm::vec3(0, 0, -1)});
+            if (glm::dot(q - p1, q - p1) < pow(m_radius, 2)) taos.push_back({tao[0], glm::vec3(0, 1, 0)});
         }
         if (tao[1] >= 0) {
             glm::vec3 q = ray.o + tao[1] * ray.d;
-            if (glm::dot(q - p2, q - p2) < pow(m_radius, 2)) taos.push_back({tao[1], glm::vec3(0, 0, 1)});
+            if (glm::dot(q - p2, q - p2) < pow(m_radius, 2)) taos.push_back({tao[1], glm::vec3(0, -1, 0)});
+        }
+    }
+
+    if (taos.size() == 0) return new TAO();
+
+    tn mintao = taos[0];
+
+    for (int i = 0; i < taos.size(); i++) {
+        if (taos[i].t < mintao.t) mintao = taos[i];
+    }
+
+    return new TAO(mintao.t, true, mintao.n);
+}
+
+NonhierCone::NonhierCone(glm::vec3 apex, double angle, double height) : m_apex(apex), m_angle(angle), m_height(height) {}
+
+NonhierCone::~NonhierCone() {}
+
+TAO* NonhierCone::intersect(Ray ray) {
+    struct tn {
+        double t;
+        glm::vec3 n;
+    };
+
+    std::vector<tn> taos;
+    glm::vec3 dp = ray.o - m_apex;
+    glm::vec3 p = m_apex - glm::vec3(0, m_height, 0);
+    glm::vec3 down = normalize(p - m_apex);
+    double alpha = RAD(m_angle);
+    double radius = m_height * tan(alpha);
+
+    glm::vec3 tmp = ray.d - glm::dot(ray.d, down) * down;
+    double A = pow(cos(alpha), 2) * glm::dot(tmp, tmp) - pow(sin(alpha), 2) * glm::dot(glm::dot(ray.d, down), glm::dot(ray.d, down));
+    double B = 2 * pow(cos(alpha), 2) * glm::dot(tmp, dp - glm::dot(dp, down) * down) - 2 * pow(sin(alpha), 2) * glm::dot(glm::dot(ray.d, down), glm::dot(dp, down));
+    tmp = dp - glm::dot(dp, down) * down;
+    double C = pow(cos(alpha), 2) * glm::dot(tmp, tmp) - pow(sin(alpha), 2) * glm::dot(glm::dot(dp, down), glm::dot(dp, down));
+    double tao[2];
+    tao[0] = -1;
+    tao[1] = -1;
+
+    size_t res = quadraticRoots(A, B, C, tao);
+
+    if (res != 0) {
+        if (tao[0] >= 0) {
+            glm::vec3 q = ray.o + tao[0] * ray.d;
+            if (glm::dot(down, q - m_apex) > 0 && glm::dot(down, q - p) < 0) taos.push_back({tao[0], glm::vec3(q.x - p.x, 0, q.z - p.z)});
+        }
+        if (tao[1] >= 0) {
+            glm::vec3 q = ray.o + tao[1] * ray.d;
+            if (glm::dot(down, q - m_apex) > 0 && glm::dot(down, q - p) < 0) taos.push_back({tao[1], glm::vec3(q.x - p.x, 0, q.z - p.z)});
+        }
+    }
+
+    if (!eq(ray.d.y, 0.0)) {
+        tao[0] = (p.y - ray.o.y) / ray.d.y;
+
+        if (tao[0] >= 0) {
+            glm::vec3 q = ray.o + tao[0] * ray.d;
+            if (glm::dot(q - p, q - p) < pow(radius, 2)) taos.push_back({tao[0], glm::vec3(0, -1, 0)});
         }
     }
 
