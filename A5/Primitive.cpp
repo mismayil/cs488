@@ -126,42 +126,42 @@ int* NonhierBox::mapuv(glm::vec3 point, glm::vec3 n, Image *texture) {
     int *uv = new int[2];
 
     if (n == glm::vec3(-1, 0, 0)) {
-        ll = glm::vec3(m_pos.x, m_pos.y, m_pos.z - m_size);
+        ll = m_pos;
         lp = point - ll;
         uv[0] = (int) (abs(lp.z / m_size) * texture->width());
         uv[1] = (int) (abs(lp.y / m_size) * texture->height());
     }
 
     if (n == glm::vec3(1, 0, 0)) {
-        ll = glm::vec3(m_pos.x + m_size, m_pos.y, m_pos.z);
+        ll = glm::vec3(m_pos.x + m_size, m_pos.y, m_pos.z + m_size);
         lp = point - ll;
         uv[0] = (int) (abs(lp.z / m_size) * texture->width());
         uv[1] = (int) (abs(lp.y / m_size) * texture->height());
     }
 
     if (n == glm::vec3(0, -1, 0)) {
-        ll = glm::vec3(m_pos.x, m_pos.y, m_pos.z - m_size);
+        ll = m_pos;
         lp = point - ll;
         uv[0] = (int) (abs(lp.x / m_size) * texture->width());
         uv[1] = (int) (abs(lp.z / m_size) * texture->height());
     }
 
     if (n == glm::vec3(0, 1, 0)) {
-        ll = glm::vec3(m_pos.x, m_pos.y + m_size, m_pos.z);
+        ll = glm::vec3(m_pos.x, m_pos.y + m_size, m_pos.z + m_size);
         lp = point - ll;
         uv[0] = (int) (abs(lp.x / m_size) * texture->width());
         uv[1] = (int) (abs(lp.z / m_size) * texture->height());
     }
 
     if (n == glm::vec3(0, 0, -1)) {
-        ll = glm::vec3(m_pos.x + m_size, m_pos.y, m_pos.z - m_size);
+        ll = glm::vec3(m_pos.x + m_size, m_pos.y, m_pos.z);
         lp = point - ll;
         uv[0] = (int) (abs(lp.x / m_size) * texture->width());
         uv[1] = (int) (abs(lp.y / m_size) * texture->height());
     }
 
     if (n == glm::vec3(0, 0, 1)) {
-        ll = m_pos;
+        ll = glm::vec3(m_pos.x, m_pos.y, m_pos.z + m_size);
         lp = point - ll;
         uv[0] = (int) (abs(lp.x / m_size) * texture->width());
         uv[1] = (int) (abs(lp.y / m_size) * texture->height());

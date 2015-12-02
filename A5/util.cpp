@@ -67,3 +67,8 @@ void progress(int &percent, uint x, uint y, size_t w, size_t h) {
         cout << "progress: " << percent << " %"<< endl;
     }
 }
+
+double random(double min, double max) {
+    srand(time(NULL));
+    return min + (rand() / (double) (RAND_MAX) * (max - min));
+}

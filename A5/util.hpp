@@ -1,6 +1,8 @@
 #pragma once
 
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include "TAO.hpp"
@@ -11,6 +13,7 @@
 #define THRESHOLD 0.1
 #define SAMPLE 2
 #define MAX_DEPTH 5
+#define ADAPTIVE_DEPTH 1
 #define AIR_REF_INDEX 1.000293
 #define MAX(a, b) (a < b ? b : a)
 #define MIN(a, b) (a < b ? a : b)
@@ -24,8 +27,8 @@ struct plane {
 };
 
 struct pixel {
-    uint x, y;
-    double l, r, b, t;
+    double x, y;
+    double offset;
 };
 
 plane getplane(glm::vec3 a, glm::vec3 b, glm::vec3 c);
@@ -36,3 +39,4 @@ glm::vec3 normalize(glm::vec3 v);
 bool eq(double a, double b);
 bool refract(glm::vec3 d, glm::vec3 n, double eta, glm::vec3 &t);
 void progress(int &percent, uint x, uint y, size_t w, size_t h);
+double random(double min, double max);
