@@ -24,52 +24,49 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 	double shininess = pmaterial->getShininess();
 	double reflectiveness = pmaterial->getReflectiveness();
 	double refractiveness = pmaterial->getRefractiveness();
-	glm::vec3 intensity = glm::vec3(0);
+	Ray eyeRay(point, normalize(ray.o - point));
+	Ray viewRay(ray.o, normalize(point - ray.o));
 
 	for (Light *light : lights) {
-		vector<softRay> softRays = light->getRays(point, ptao->tao);
+		vector<Ray> lightRays = light->getRays(point);
 
-		for (softRay s : softRays) {
-			Ray lightRay = s.lightRay;
-			Ray shadowRay = s.shadowRay;
+		for (Ray lightRay : lightRays) {
 
-			TAO *stao = root->intersect(shadowRay);
+			TAO *stao = root->intersect(lightRay);
 
-			if (!stao || !stao->hit) {
-				Ray reflectionRay(point, normalize(-lightRay.d + 2.0f * glm::dot(lightRay.d, normal) * normal));
-				double distance = glm::length(lightRay.o - point);
-				intensity = light->colour / (light->getArea() * (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance));
-				glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay.d, normal), 0.0) * intensity;
-				glm::vec3 specular = ks * pow((float) MAX(glm::dot(reflectionRay.d, normalize(ray.o - point)), 0.0), shininess) * intensity;
-				colour += diffuse + specular;
-			}
+			if (stao && stao->hit) continue;
+
+			Ray lightReflectionRay(point, normalize(-lightRay.d + 2.0f * glm::dot(lightRay.d, normal) * normal));
+			glm::vec3 intensity = light->getIntensity(lightRay);
+			glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay.d, normal), 0.0) * intensity;
+			glm::vec3 specular = ks * pow((float) MAX(glm::dot(lightReflectionRay.d, eyeRay.d), 0.0), shininess) * intensity;
+			colour += diffuse + specular;
 		}
 	}
 
-	Ray viewRay(ray.o, normalize(point - ray.o));
-	glm::vec3 reflection = glm::vec3(0);
-	glm::vec3 refraction = glm::vec3(0);
 	colour += kd * ambient;
 
 	if (depth == MAX_DEPTH) return colour;
 
-	Ray reflectionRay(point, (EPS + ptao->tao) * normalize(viewRay.d - 2 * glm::dot(viewRay.d, normal) * normal));
+	glm::vec3 reflection = glm::vec3(0);
+	glm::vec3 refraction = glm::vec3(0);
+	glm::vec3 direction = normalize(viewRay.d - 2 * glm::dot(viewRay.d, normal) * normal);
+	Ray reflectionRay(point + EPS * direction, direction);
+
 	if (reflectiveness > 0) reflection = ks * trace(root, reflectionRay, lights, ambient, depth + 1) * reflectiveness;
 
 	if (refractiveness > 1 || refractiveness < 1) {
 		double costheta = 0;
 		double eta = AIR_REF_INDEX / refractiveness;
-		glm::vec3 t;
-		glm::vec3 tmp = glm::vec3(0);
 
 		if (glm::dot(viewRay.d, normal) < 0) {
-			if (!refract(viewRay.d, normal, eta, t)) return colour + reflection;
-			Ray refractionRay(point, (EPS + ptao->tao) * t);
+			if (!refract(viewRay.d, normal, eta, direction)) return colour + reflection;
+			Ray refractionRay(point + EPS * direction, direction);
 			refraction = trace(root, refractionRay, lights, ambient, depth + 1);
 			costheta = -glm::dot(viewRay.d, normal);
 		} else {
-			if (!refract(viewRay.d, -normal, 1.0 / eta, t)) return reflection;
-			Ray refractionRay(point, (EPS + ptao->tao) * t);
+			if (!refract(viewRay.d, -normal, 1.0 / eta, direction)) return reflection;
+			Ray refractionRay(point + EPS * direction, direction);
 			refraction = trace(root, refractionRay, lights, ambient, depth + 1);
 			costheta = glm::dot(refractionRay.d, normal);
 		}

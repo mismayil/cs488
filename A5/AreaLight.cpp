@@ -7,19 +7,19 @@ AreaLight::AreaLight(glm::vec3 pos, double w, double h, glm::vec3 color, glm::ve
 
 double AreaLight::getArea() { return width * height; };
 
-std::vector<softRay> AreaLight::getRays(glm::vec3 point, double tao) {
-    std::vector<softRay> s;
+std::vector<Ray> AreaLight::getRays(glm::vec3 point) {
+    std::vector<Ray> v;
 
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            double rx = random(0, width);
-            double ry = random(0, height);
+    for (int i = 0; i < SHADOW_SAMPLE; i++) {
+        for (int j = 0; j < SHADOW_SAMPLE; j++) {
+            double rx = width / 2 + (random(0, width) + i) / SHADOW_SAMPLE;
+            double ry = height / 2 + (random(0, height) + j) / SHADOW_SAMPLE;
             glm::vec3 npos = position + glm::vec3(rx, ry, 0);
-            Ray lightRay(npos, normalize(npos - point));
-            Ray shadowRay(point, (EPS + tao) * lightRay.d);
-            s.push_back({lightRay, shadowRay});
+            glm::vec3 direction = normalize(npos - point);
+            Ray lightRay(point + EPS * direction, direction);
+            v.push_back(lightRay);
         }
     }
 
-    return s;
+    return v;
 }

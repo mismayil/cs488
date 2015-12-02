@@ -8,12 +8,17 @@ Light::Light(glm::vec3 pos, glm::vec3 color, glm::vec3 falloff) : position(pos),
 
 double Light::getArea() { return 1; }
 
-std::vector<softRay> Light::getRays(glm::vec3 point, double tao) {
-    Ray lightRay(position, normalize(position - point));
-    Ray shadowRay(point, (EPS + tao) * lightRay.d);
-    std::vector<softRay> s;
-    s.push_back({lightRay, shadowRay});
-    return s;
+std::vector<Ray> Light::getRays(glm::vec3 point) {
+    glm::vec3 direction = normalize(position - point);
+    Ray lightRay(point + EPS * direction, direction);
+    std::vector<Ray> v;
+    v.push_back(lightRay);
+    return v;
+}
+
+glm::vec3 Light::getIntensity(Ray lightRay) {
+    double distance = glm::length(lightRay.d);
+    return colour / (getArea() * (falloff[0] + falloff[1] * distance + falloff[2] * pow(distance, 2)));
 }
 
 std::ostream& operator<<(std::ostream& out, const Light& l)

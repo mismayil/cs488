@@ -12,6 +12,7 @@
 #define EPS 1e-6
 #define THRESHOLD 0.05
 #define SAMPLE 2
+#define SHADOW_SAMPLE 3
 #define MAX_DEPTH 5
 #define ADAPTIVE_DEPTH 1
 #define AIR_REF_INDEX 1.000293

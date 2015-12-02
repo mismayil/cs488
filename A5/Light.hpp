@@ -13,7 +13,8 @@ public:
     glm::vec3 falloff;
     Light(glm::vec3 pos, glm::vec3 color, glm::vec3 falloff);
     virtual double getArea();
-    virtual std::vector<softRay> getRays(glm::vec3 point, double tao);
+    virtual glm::vec3 getIntensity(Ray lightRay);
+    virtual std::vector<Ray> getRays(glm::vec3 point);
 };
 
 std::ostream& operator<<(std::ostream& out, const Light& l);
