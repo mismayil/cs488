@@ -93,6 +93,7 @@ OBJECTS := \
 	$(OBJDIR)/TAO.o \
 	$(OBJDIR)/Ray.o \
 	$(OBJDIR)/PerlinNoise.o \
+	$(OBJDIR)/AreaLight.o \
 
 RESOURCES := \
 
@@ -207,5 +208,8 @@ $(OBJDIR)/Ray.o: ../Ray.cpp
 $(OBJDIR)/PerlinNoise.o: ../PerlinNoise.cpp
 		@echo $(notdir $<)
 		$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
-		
+$(OBJDIR)/AreaLight.o: ../AreaLight.cpp
+		@echo $(notdir $<)
+		$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
 -include $(OBJECTS:%.o=%.d)

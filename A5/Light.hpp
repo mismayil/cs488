@@ -4,13 +4,12 @@
 
 #include <glm/glm.hpp>
 
-// Represents a simple point light.
-struct Light {
-  Light();
-  
+class Light {
+public:
+  Light(glm::vec3 pos, glm::vec3 color, double falloff[3]);
   glm::vec3 colour;
   glm::vec3 position;
-  double falloff[3];
+  double *falloff;
 };
 
 std::ostream& operator<<(std::ostream& out, const Light& l);

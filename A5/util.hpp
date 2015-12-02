@@ -10,7 +10,7 @@
 #include "PerlinNoise.hpp"
 
 #define EPS 1e-6
-#define THRESHOLD 0.1
+#define THRESHOLD 0.05
 #define SAMPLE 2
 #define MAX_DEPTH 5
 #define ADAPTIVE_DEPTH 1

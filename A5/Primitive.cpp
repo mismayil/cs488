@@ -239,6 +239,7 @@ NonhierCone::NonhierCone(glm::vec3 apex, double angle, double height) : m_apex(a
 NonhierCone::~NonhierCone() {}
 
 TAO* NonhierCone::intersect(Ray ray) {
+
     struct tn {
         double t;
         glm::vec3 n;

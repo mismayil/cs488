@@ -60,19 +60,18 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 		if (glm::dot(viewRay.d, normal) < 0) {
 			if (!refract(viewRay.d, normal, eta, t)) return colour + reflection;
 			Ray refractionRay(point, (EPS + ptao->tao) * t);
-			refraction = ks * trace(root, refractionRay, lights, ambient, depth + 1);
+			refraction = trace(root, refractionRay, lights, ambient, depth + 1);
 			costheta = -glm::dot(viewRay.d, normal);
-			tmp = colour;
 		} else {
 			if (!refract(viewRay.d, -normal, 1.0 / eta, t)) return reflection;
 			Ray refractionRay(point, (EPS + ptao->tao) * t);
-			refraction = ks * trace(root, refractionRay, lights, ambient, depth + 1);
+			refraction = trace(root, refractionRay, lights, ambient, depth + 1);
 			costheta = glm::dot(refractionRay.d, normal);
 		}
 
 		double R0 = pow(eta - 1, 2) / pow(eta + 1, 2);
 		double R = R0 + (1 - R0) * pow(1 - costheta, 5);
-		return tmp + R * reflection + (1 - R) * refraction;
+		return R * reflection + (1 - R) * refraction;
 	}
 
 	return colour + reflection;
@@ -84,9 +83,9 @@ glm::vec3 process(pixel p, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec
 
 	for (int i = 0; i < SAMPLE; i++) {
 		for (int j = 0; j < SAMPLE; j++) {
-			double rx = random(0, p.offset);
-			double ry = random(0, p.offset);
-			glm::vec3 direction = normalize(view + (-1 + 2 * (p.y + MIN((ry + j) / SAMPLE, p.offset)) / h) * up + (-1 + 2 * (p.x + MIN((rx + i) / SAMPLE, p.offset)) / w) * left);
+			double rox = random(0, p.offset);
+			double roy = random(0, p.offset);
+			glm::vec3 direction = normalize(view + (-1 + 2 * (p.y + MIN((roy + j) / SAMPLE, p.offset)) / h) * up + (-1 + 2 * (p.x + MIN((rox + i) / SAMPLE, p.offset)) / w) * left);
 			Ray ray(eye, direction);
 			glm::vec3 c = trace(root, ray, lights, ambient, 0);
 			colours.push_back(c);
