@@ -46,7 +46,7 @@
 
 #include "lua488.hpp"
 
-#include "Light.hpp"
+#include "AreaLight.hpp"
 #include "Mesh.hpp"
 #include "GeometryNode.hpp"
 #include "JointNode.hpp"
@@ -376,7 +376,33 @@ int gr_light_cmd(lua_State* L)
   get_tuple(L, 2, &col[0], 3);
   get_tuple(L, 3, &falloff[0], 3);
 
-  data->light = new Light(glm::vec3(pos[0], pos[1], pos[2]), glm::vec3(col[0], col[1], col[2]), falloff);
+  data->light = new Light(glm::vec3(pos[0], pos[1], pos[2]), glm::vec3(col[0], col[1], col[2]), glm::vec3(falloff[0], falloff[1], falloff[2]));
+
+  luaL_newmetatable(L, "gr.light");
+  lua_setmetatable(L, -2);
+
+  return 1;
+}
+
+// Make an area light
+extern "C"
+int gr_arealight_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+
+  gr_light_ud* data = (gr_light_ud*)lua_newuserdata(L, sizeof(gr_light_ud));
+  data->light = 0;
+
+  double pos[3], col[3], falloff[3];
+  double width, height;
+  get_tuple(L, 1, &pos[0], 3);
+  get_tuple(L, 2, &col[0], 3);
+  get_tuple(L, 3, &falloff[0], 3);
+
+  width = luaL_checknumber(L, 4);
+  height = luaL_checknumber(L, 5);
+
+  data->light = new AreaLight(glm::vec3(pos[0], pos[1], pos[2]), width, height, glm::vec3(col[0], col[1], col[2]), glm::vec3(falloff[0], falloff[1], falloff[2]));
 
   luaL_newmetatable(L, "gr.light");
   lua_setmetatable(L, -2);
@@ -460,7 +486,7 @@ int gr_material_cmd(lua_State* L)
   return 1;
 }
 
-// Create a material
+// Create a text material
 extern "C"
 int gr_textmaterial_cmd(lua_State* L)
 {
@@ -647,6 +673,7 @@ static const luaL_Reg grlib_functions[] = {
   {"nh_cone", gr_nh_cone_cmd},
   {"cylinder", gr_cylinder_cmd},
   {"cone", gr_cone_cmd},
+  {"arealight",  gr_arealight_cmd},
   {0, 0}
 };
 

@@ -24,20 +24,25 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 	double shininess = pmaterial->getShininess();
 	double reflectiveness = pmaterial->getReflectiveness();
 	double refractiveness = pmaterial->getRefractiveness();
+	glm::vec3 intensity = glm::vec3(0);
 
 	for (Light *light : lights) {
-		Ray lightRay(light->position, normalize(light->position - point));
-		Ray shadowRay(point, (EPS + ptao->tao) * lightRay.d);
+		vector<softRay> softRays = light->getRays(point, ptao->tao);
 
-		TAO *stao = root->intersect(shadowRay);
+		for (softRay s : softRays) {
+			Ray lightRay = s.lightRay;
+			Ray shadowRay = s.shadowRay;
 
-		if (!stao || !stao->hit) {
-			Ray reflectionRay(point, normalize(-lightRay.d + 2.0f * glm::dot(lightRay.d, normal) * normal));
-			double distance = glm::length(lightRay.o - point);
-			glm::vec3 intensity = light->colour / (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance);
-			glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay.d, normal), 0.0) * intensity;
-			glm::vec3 specular = ks * pow((float) MAX(glm::dot(reflectionRay.d, normalize(ray.o - point)), 0.0), shininess) * intensity;
-			colour += diffuse + specular;
+			TAO *stao = root->intersect(shadowRay);
+
+			if (!stao || !stao->hit) {
+				Ray reflectionRay(point, normalize(-lightRay.d + 2.0f * glm::dot(lightRay.d, normal) * normal));
+				double distance = glm::length(lightRay.o - point);
+				intensity = light->colour / (light->getArea() * (float) (light->falloff[0] + light->falloff[1] * distance + light->falloff[2] * distance * distance));
+				glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay.d, normal), 0.0) * intensity;
+				glm::vec3 specular = ks * pow((float) MAX(glm::dot(reflectionRay.d, normalize(ray.o - point)), 0.0), shininess) * intensity;
+				colour += diffuse + specular;
+			}
 		}
 	}
 

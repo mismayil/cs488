@@ -3,13 +3,17 @@
 #include <iosfwd>
 
 #include <glm/glm.hpp>
+#include <vector>
+#include "util.hpp"
 
 class Light {
 public:
-  Light(glm::vec3 pos, glm::vec3 color, double falloff[3]);
-  glm::vec3 colour;
-  glm::vec3 position;
-  double *falloff;
+    glm::vec3 colour;
+    glm::vec3 position;
+    glm::vec3 falloff;
+    Light(glm::vec3 pos, glm::vec3 color, glm::vec3 falloff);
+    virtual double getArea();
+    virtual std::vector<softRay> getRays(glm::vec3 point, double tao);
 };
 
 std::ostream& operator<<(std::ostream& out, const Light& l);

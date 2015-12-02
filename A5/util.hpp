@@ -31,6 +31,11 @@ struct pixel {
     double offset;
 };
 
+struct softRay {
+    Ray lightRay;
+    Ray shadowRay;
+};
+
 plane getplane(glm::vec3 a, glm::vec3 b, glm::vec3 c);
 double intersectPLane(struct plane plane, Ray ray);
 TAO *intersectTriangle(Ray ray, glm::vec3 a, glm::vec3 b, glm::vec3 c);
