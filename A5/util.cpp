@@ -49,16 +49,13 @@ glm::vec3 normalize(glm::vec3 v) {
 }
 
 bool eq(double a, double b) {
-    if (a > b) return false;
-    if (a < b) return false;
-    return true;
+    return fabs(a - b) < DBL_EPSILON;
 }
 
 bool refract(glm::vec3 d, glm::vec3 n, double eta, glm::vec3 &t) {
 	double tmp = 1 - pow(eta, 2) * (1 - pow(glm::dot(d, n), 2));
 	if (tmp < 0) return false;
 	t = normalize(eta * (d - n * glm::dot(d, n)) - n * sqrt(tmp));
-    //t = normalize(eta * (d + n * (-glm::dot(d, n) - sqrt(tmp))));
 	return true;
 }
 

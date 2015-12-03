@@ -9,7 +9,7 @@ class TextureMaterial : public PhongMaterial {
     Image *texture;
     int *uv;
 public:
-    TextureMaterial(const char *filename, glm::vec3 ks, double shininess, double reflectiveness, double refractiveness, double bumpness);
+    TextureMaterial(const char *filename, glm::vec3 ks, double shininess, double reflectiveness, double refractiveness, double bumpness, double transparency);
     virtual ~TextureMaterial();
     Image *getTexture();
     void setuv(int *uv);

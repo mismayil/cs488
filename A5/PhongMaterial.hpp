@@ -8,7 +8,7 @@
 
 class PhongMaterial : public Material {
 public:
-  PhongMaterial(const glm::vec3& kd, const glm::vec3& ks, double shininess, double reflectiveness, double refractiveness, double bumpness);
+  PhongMaterial(const glm::vec3& kd, const glm::vec3& ks, double shininess, double reflectiveness, double refractiveness, double bumpness, double transparency);
   virtual ~PhongMaterial();
   virtual glm::vec3 getkd();
   glm::vec3 getks();
@@ -16,6 +16,7 @@ public:
   double getReflectiveness();
   double getRefractiveness();
   double getBumpness();
+  double getTransparency();
   glm::vec3 bump(glm::vec3 n, glm::vec3 point);
   PerlinNoise *getpn();
 private:
@@ -26,5 +27,6 @@ private:
   double m_reflectiveness;
   double m_refractiveness;
   double m_bumpness;
+  double m_transparency;
   PerlinNoise *perlin;
 };

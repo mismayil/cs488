@@ -24,6 +24,7 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 	double shininess = pmaterial->getShininess();
 	double reflectiveness = pmaterial->getReflectiveness();
 	double refractiveness = pmaterial->getRefractiveness();
+	double transparency = pmaterial->getTransparency();
 	Ray eyeRay(point, normalize(ray.o - point));
 	Ray viewRay(ray.o, normalize(point - ray.o));
 
@@ -56,21 +57,21 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 	glm::vec3 direction = normalize(viewRay.d - 2 * glm::dot(viewRay.d, normal) * normal);
 	Ray reflectionRay(point + EPS * direction, direction);
 
-	if (reflectiveness > 0) reflection = ks * trace(root, reflectionRay, lights, ambient, depth + 1) * reflectiveness;
+	if (reflectiveness > 0) reflection = trace(root, reflectionRay, lights, ambient, depth + 1) * reflectiveness;
 
-	if (refractiveness > 1 || refractiveness < 1) {
+	if (transparency > 0) {
 		double costheta = 0;
 		double eta = AIR_REF_INDEX / refractiveness;
 
 		if (glm::dot(viewRay.d, normal) < 0) {
-			if (!refract(viewRay.d, normal, eta, direction)) return colour + reflection;
+			if (!refract(viewRay.d, normal, eta, direction)) return reflection;
 			Ray refractionRay(point + EPS * direction, direction);
-			refraction = trace(root, refractionRay, lights, ambient, depth + 1);
+			refraction = trace(root, refractionRay, lights, ambient, depth + 1) * transparency;
 			costheta = -glm::dot(viewRay.d, normal);
 		} else {
 			if (!refract(viewRay.d, -normal, 1.0 / eta, direction)) return reflection;
 			Ray refractionRay(point + EPS * direction, direction);
-			refraction = trace(root, refractionRay, lights, ambient, depth + 1);
+			refraction = trace(root, refractionRay, lights, ambient, depth + 1) * transparency;
 			costheta = glm::dot(refractionRay.d, normal);
 		}
 

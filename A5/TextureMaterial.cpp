@@ -1,7 +1,7 @@
 #include "TextureMaterial.hpp"
 
-TextureMaterial::TextureMaterial(const char *filename, glm::vec3 ks, double shininess, double reflectiveness, double refractiveness, double bumpness) :
-                                                PhongMaterial(glm::vec3(0), ks, shininess, reflectiveness, refractiveness, bumpness) {
+TextureMaterial::TextureMaterial(const char *filename, glm::vec3 ks, double shininess, double reflectiveness, double refractiveness, double transparency, double bumpness) :
+                                                PhongMaterial(glm::vec3(0), ks, shininess, reflectiveness, refractiveness, transparency, bumpness) {
     texture = new Image();
     texture->loadPng(filename);
 }

@@ -1,12 +1,14 @@
 #include "PhongMaterial.hpp"
+#include <iostream>
 
 PhongMaterial::PhongMaterial(
-	const glm::vec3& kd, const glm::vec3& ks, double shininess, double reflectiveness, double refractiveness, double bumpness)
+	const glm::vec3& kd, const glm::vec3& ks, double shininess, double reflectiveness, double refractiveness, double transparency, double bumpness)
 	: m_kd(kd)
 	, m_ks(ks)
 	, m_shininess(shininess)
 	, m_reflectiveness(reflectiveness)
 	, m_refractiveness(refractiveness)
+	, m_transparency(transparency)
 	, m_bumpness(bumpness)
 	, perlin(new PerlinNoise())
 {}
@@ -38,8 +40,13 @@ double PhongMaterial::getBumpness() {
 	return m_bumpness;
 }
 
+double PhongMaterial::getTransparency() {
+	return m_transparency;
+}
+
 glm::vec3 PhongMaterial::bump(glm::vec3 n, glm::vec3 point) {
 	if (eq(m_bumpness, 0.0)) return n;
+	std::cout << "hey" << std::endl;
 	glm::vec3 nn, pp;
 	pp = 0.1f * point;
 	double noiseCoefx = perlin->noise(pp.x, pp.y, pp.z);

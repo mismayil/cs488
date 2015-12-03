@@ -462,18 +462,29 @@ int gr_material_cmd(lua_State* L)
   gr_material_ud* data = (gr_material_ud*)lua_newuserdata(L, sizeof(gr_material_ud));
   data->material = 0;
 
+  int argc = lua_gettop(L);
   double kd[3], ks[3];
-  get_tuple(L, 1, kd, 3);
-  get_tuple(L, 2, ks, 3);
+  double shininess = 0;
+  double reflectiveness = 0;
+  double refractiveness = 1.0;
+  double transparency = 0;
+  double bumpness = 0;
 
-  double shininess = luaL_checknumber(L, 3);
-  double reflectiveness = luaL_checknumber(L, 4);
-  double refractiveness = luaL_checknumber(L, 5);
-  double bumpness = luaL_checknumber(L, 6);
+  switch (argc) {
+      case 8: bumpness = luaL_checknumber(L, 7);
+      case 7: transparency = luaL_checknumber(L, 6);
+      case 6: refractiveness = luaL_checknumber(L, 5);
+      case 5: reflectiveness = luaL_checknumber(L, 4);
+      case 4: shininess = luaL_checknumber(L, 3);
+      case 3: get_tuple(L, 1, kd, 3);
+              get_tuple(L, 2, ks, 3);
+              break;
+      default: return 0;
+  }
 
   data->material = new PhongMaterial(glm::vec3(kd[0], kd[1], kd[2]),
                                      glm::vec3(ks[0], ks[1], ks[2]),
-                                     shininess, reflectiveness, refractiveness, bumpness);
+                                     shininess, reflectiveness, refractiveness, transparency, bumpness);
 
   luaL_newmetatable(L, "gr.material");
   lua_setmetatable(L, -2);
@@ -489,18 +500,29 @@ int gr_textmaterial_cmd(lua_State* L)
 
   gr_material_ud* data = (gr_material_ud*)lua_newuserdata(L, sizeof(gr_material_ud));
 
-  const char* filename = luaL_checkstring(L, 1);
   data->material = 0;
 
+  int argc = lua_gettop(L);
+  const char* filename;
   double ks[3];
-  get_tuple(L, 2, ks, 3);
+  double shininess = 0;
+  double reflectiveness = 0;
+  double refractiveness = 1.0;
+  double transparency = 0;
+  double bumpness = 0;
 
-  double shininess = luaL_checknumber(L, 3);
-  double reflectiveness = luaL_checknumber(L, 4);
-  double refractiveness = luaL_checknumber(L, 5);
-  double bumpness = luaL_checknumber(L, 6);
+  switch (argc) {
+      case 8: bumpness = luaL_checknumber(L, 7);
+      case 7: transparency = luaL_checknumber(L, 6);
+      case 6: refractiveness = luaL_checknumber(L, 5);
+      case 5: reflectiveness = luaL_checknumber(L, 4);
+      case 4: shininess = luaL_checknumber(L, 3);
+      case 3: get_tuple(L, 2, ks, 3);
+      case 2: filename = luaL_checkstring(L, 1); break;
+      default: return 0;
+  }
 
-  data->material = new TextureMaterial(filename, glm::vec3(ks[0], ks[1], ks[2]), shininess, reflectiveness, refractiveness, bumpness);
+  data->material = new TextureMaterial(filename, glm::vec3(ks[0], ks[1], ks[2]), shininess, reflectiveness, refractiveness, transparency, bumpness);
 
   luaL_newmetatable(L, "gr.material");
   lua_setmetatable(L, -2);

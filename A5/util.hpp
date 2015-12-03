@@ -3,19 +3,20 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+#include <float.h>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include "TAO.hpp"
 #include "Ray.hpp"
 #include "PerlinNoise.hpp"
 
-#define EPS 1e-6
+#define EPS 1e-4
 #define THRESHOLD 0.1
 #define SAMPLE 2
 #define SHADOW_SAMPLE 3
 #define MAX_DEPTH 5
-#define ADAPTIVE_DEPTH 0
-#define AIR_REF_INDEX 1.000293
+#define ADAPTIVE_DEPTH 1
+#define AIR_REF_INDEX 1
 #define MAX(a, b) (a < b ? b : a)
 #define MIN(a, b) (a < b ? a : b)
 #define RAD(a) (a * M_PI / 180)
