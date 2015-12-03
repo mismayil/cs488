@@ -78,10 +78,24 @@ TAO* NonhierSphere::intersect(Ray ray) {
     double B = glm::dot(2.0f * (ray.o - m_pos), ray.d);
     double C = glm::dot(ray.o - m_pos, ray.o - m_pos) - m_radius * m_radius;
     size_t res = quadraticRoots(A, B, C, tao);
-    if (res == 0) return new TAO();
-    if (res == 1) return new TAO(tao[0], std::isnan(tao[0]) || std::isinf(tao[0]) || tao[0] < 0 ? false : true, (ray.o + (float) tao[0] * ray.d) - m_pos);
-    double mintao = MIN(tao[0], tao[1]);
-    return new TAO(mintao, std::isnan(mintao) || std::isinf(mintao) || mintao < 0 ? false : true, (ray.o + (float) mintao * ray.d) - m_pos);
+    glm::vec3 nmin, nmax;
+
+    if (res == 0) return NULL;
+
+    if (res == 1) {
+        bool hit = (std::isnan(tao[0]) || std::isinf(tao[0]) || tao[0] < 0) ? false : true;
+        if (!hit) return NULL;
+        nmin = nmax = (ray.o + (float) tao[0] * ray.d) - m_pos;
+        return new TAO(tao[0], tao[0], nmin, nmax);
+    }
+
+    double taomin = MIN(tao[0], tao[1]);
+    double taomax = MAX(tao[0], tao[1]);
+    bool hit = (std::isnan(taomin) || std::isinf(taomin) || taomin < 0) ? false : true;
+    if (!hit) return NULL;
+    nmin = (ray.o + (float) taomin * ray.d) - m_pos;
+    nmax = (ray.o + (float) taomax * ray.d) - m_pos;
+    return new TAO(taomin, taomax, nmin, nmax);
 }
 
 int* NonhierSphere::mapuv(glm::vec3 point, glm::vec3 n, Image *texture) {
@@ -223,15 +237,17 @@ TAO* NonhierCylinder::intersect(Ray ray) {
         }
     }
 
-    if (taos.size() == 0) return new TAO();
+    if (taos.size() == 0) return NULL;
 
-    tn mintao = taos[0];
+    tn taomin = taos[0];
+    tn taomax = taos[0];
 
     for (int i = 0; i < taos.size(); i++) {
-        if (taos[i].t < mintao.t) mintao = taos[i];
+        if (taos[i].t < taomin.t) taomin = taos[i];
+        if (taos[i].t > taomax.t) taomax = taos[i];
     }
 
-    return new TAO(mintao.t, true, mintao.n);
+    return new TAO(taomin.t, taomax.t, taomin.n, taomax.n);
 }
 
 NonhierCone::NonhierCone(glm::vec3 apex, double angle, double height) : m_apex(apex), m_angle(angle), m_height(height) {}
@@ -283,15 +299,17 @@ TAO* NonhierCone::intersect(Ray ray) {
         }
     }
 
-    if (taos.size() == 0) return new TAO();
+    if (taos.size() == 0) return NULL;
 
-    tn mintao = taos[0];
+    tn taomin = taos[0];
+    tn taomax = taos[0];
 
     for (int i = 0; i < taos.size(); i++) {
-        if (taos[i].t < mintao.t) mintao = taos[i];
+        if (taos[i].t < taomin.t) taomin = taos[i];
+        if (taos[i].t > taomax.t) taomax = taos[i];
     }
 
-    return new TAO(mintao.t, true, mintao.n);
+    return new TAO(taomin.t, taomax.t, taomin.n, taomax.n);
 }
 
 BoundedBox::BoundedBox(vector<glm::vec3> v) {
@@ -342,16 +360,23 @@ TAO* BoundedBox::intersect(Ray ray) {
     double M = MIN(MIN(txmax, tymax), MIN(tymax, tzmax));
     double m = MAX(MAX(txmin, tymin), MAX(tymin, tzmin));
 
-    glm::vec3 n;
+    glm::vec3 nmin, nmax;
 
-    if (eq(m, txmin)) n = glm::vec3(1, 0, 0);
-    if (eq(m, txmax)) n = glm::vec3(-1, 0, 0);
-    if (eq(m, tymin)) n = glm::vec3(0, 1, 0);
-    if (eq(m, tymax)) n = glm::vec3(0, -1, 0);
-    if (eq(m, tzmin)) n = glm::vec3(0, 0, 1);
-    if (eq(m, tzmax)) n = glm::vec3(0, 0, -1);
+    if (eq(m, txmin)) nmin = glm::vec3(1, 0, 0);
+    if (eq(m, txmax)) nmin = glm::vec3(-1, 0, 0);
+    if (eq(m, tymin)) nmin = glm::vec3(0, 1, 0);
+    if (eq(m, tymax)) nmin = glm::vec3(0, -1, 0);
+    if (eq(m, tzmin)) nmin = glm::vec3(0, 0, 1);
+    if (eq(m, tzmax)) nmin = glm::vec3(0, 0, -1);
 
-    if (std::isnan(m) || std::isinf(m) || m > M || m < EPS) return new TAO();
+    if (eq(M, txmin)) nmax = glm::vec3(1, 0, 0);
+    if (eq(M, txmax)) nmax = glm::vec3(-1, 0, 0);
+    if (eq(M, tymin)) nmax = glm::vec3(0, 1, 0);
+    if (eq(M, tymax)) nmax = glm::vec3(0, -1, 0);
+    if (eq(M, tzmin)) nmax = glm::vec3(0, 0, 1);
+    if (eq(M, tzmax)) nmax = glm::vec3(0, 0, -1);
 
-    return new TAO(m, true, n);
+    if (std::isnan(m) || std::isinf(m) || m > M || m < EPS) return NULL;
+
+    return new TAO(m, M, nmin, nmax);
 }

@@ -7,9 +7,7 @@
 #include <list>
 #include <string>
 #include <iostream>
-
-#include "TAO.hpp"
-#include "Ray.hpp"
+#include "util.hpp"
 
 enum class NodeType {
 	SceneNode,

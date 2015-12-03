@@ -137,15 +137,28 @@ std::ostream & operator << (std::ostream & os, const SceneNode & node) {
 
 TAO* SceneNode::intersect(Ray ray) {
     TAO *mintao = NULL;
+    TAO *maxtao = NULL;
 
     ray.o = glm::vec3(get_inverse() * glm::vec4(ray.o, 1));
     ray.d = glm::vec3(get_inverse() * glm::vec4(ray.d, 0));
 
     for (SceneNode *child : children) {
         TAO *tao = child->intersect(ray);
-        if (tao && tao->hit && ((mintao == NULL) || (tao->tao < mintao->tao))) mintao = tao;
+        if (tao && (!mintao || (tao->taomin < mintao->taomin))) mintao = tao;
+        if (tao && (!maxtao || (tao->taomax > maxtao->taomax))) maxtao = tao;
     }
 
-    if (mintao) mintao->n = glm::transpose(glm::mat3(get_inverse())) * mintao->n;
-    return mintao;
+    if (mintao) {
+        mintao->nmin = glm::transpose(glm::mat3(get_inverse())) * mintao->nmin;
+        mintao->nmax = glm::transpose(glm::mat3(get_inverse())) * mintao->nmax;
+    }
+
+    if (maxtao) {
+        maxtao->nmax = glm::transpose(glm::mat3(get_inverse())) * maxtao->nmax;
+        maxtao->nmin = glm::transpose(glm::mat3(get_inverse())) * maxtao->nmin;
+    }
+
+    if (mintao && maxtao) return new TAO(mintao->taomin, maxtao->taomax, mintao->nmin, maxtao->nmax, mintao->materialmin, maxtao->materialmax);
+
+    return NULL;
 }

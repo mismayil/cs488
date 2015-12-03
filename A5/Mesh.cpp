@@ -56,18 +56,20 @@ TAO* Mesh::intersect(Ray ray) {
 #ifdef DRAW_AABB
 	return aabb->intersect(ray);
 #else
-	if (!btao->hit) return new TAO();
+	if (!btao) return NULL;
 #endif
 #endif
 
 	TAO *mintao = NULL;
+	TAO *maxtao = NULL;
 
 	for (int i = 0; i < m_faces.size(); i++) {
 		TAO *tao = intersectTriangle(ray, m_vertices[m_faces[i].v1], m_vertices[m_faces[i].v2], m_vertices[m_faces[i].v3]);
-		if (tao->hit && (!mintao || tao->tao < mintao->tao)) mintao = tao;
+		if (tao && (!mintao || tao->taomin < mintao->taomin)) mintao = tao;
+		if (tao && (!maxtao || tao->taomax < maxtao->taomax)) maxtao = tao;
 	}
 
-	if (mintao) return mintao;
+	if (mintao && maxtao) return new TAO(mintao->taomin, maxtao->taomax, mintao->nmin, maxtao->nmax, mintao->materialmin, maxtao->materialmax);
 
-	return new TAO();
+	return NULL;
 }

@@ -32,14 +32,20 @@ TAO* GeometryNode::intersect(Ray ray) {
 	ray.d = glm::vec3(get_inverse() * glm::vec4(ray.d, 0));
 
 	TAO *tao = m_primitive->intersect(ray);
-	glm::vec3 point = ray.o + (float) tao->tao * ray.d;
+
+	if (!tao) return NULL;
+
+	glm::vec3 point = ray.o + (float) tao->taomin * ray.d;
 
 	TextureMaterial *tmaterial = dynamic_cast<TextureMaterial *>(m_material);
 
-	if (tmaterial) tmaterial->setuv(m_primitive->mapuv(point, tao->n, tmaterial->getTexture()));
+	if (tmaterial) tmaterial->setuv(m_primitive->mapuv(point, tao->nmin, tmaterial->getTexture()));
 
-	tao->material = m_material;
-	tao->n = glm::transpose(glm::mat3(get_inverse())) * tao->n;
+	tao->materialmin = m_material;
+	tao->materialmax = m_material;
+
+	tao->nmin = glm::transpose(glm::mat3(get_inverse())) * tao->nmin;
+	tao->nmax = glm::transpose(glm::mat3(get_inverse())) * tao->nmax;
 
 	return tao;
 }

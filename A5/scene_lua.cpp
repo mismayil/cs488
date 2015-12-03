@@ -142,14 +142,9 @@ int gr_joint_cmd(lua_State* L)
   data->node = 0;
 
   const char* name = luaL_checkstring(L, 1);
-  JointNode* node = new JointNode(name);
+  int op = luaL_checknumber(L, 2);
 
-  double x[3], y[3];
-  get_tuple(L, 2, x, 3);
-  get_tuple(L, 3, y, 3);
-
-  node->set_joint_x(x[0], x[1], x[2]);
-  node->set_joint_y(y[0], y[1], y[2]);
+  JointNode* node = new JointNode(name, (OPERATION) op);
 
   data->node = node;
 

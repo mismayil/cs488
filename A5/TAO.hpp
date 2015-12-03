@@ -7,10 +7,11 @@ class Material;
 // intersection info
 class TAO {
     public:
-        double tao;
-        bool hit;
-        glm::vec3 n;
-        Material *material;
+        double taomin, taomax;
+        glm::vec3 nmin, nmax;
+        Material *materialmin;
+        Material *materialmax;
         TAO();
-        TAO(double tao, bool hit, glm::vec3 n);
+        TAO(double taomin, double taomax, glm::vec3 nmin, glm::vec3 nmax);
+        TAO(double taomin, double taomax, glm::vec3 nmin, glm::vec3 nmax, Material *mmin, Material *mmax);
 };

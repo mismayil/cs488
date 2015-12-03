@@ -16,9 +16,9 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 	if (!ptao) return colour;
 
-	glm::vec3 point = ray.o + ptao->tao * ray.d;
-	PhongMaterial *pmaterial = static_cast<PhongMaterial *>(ptao->material);
-	glm::vec3 normal = normalize(pmaterial->bump(ptao->n, point));
+	glm::vec3 point = ray.o + ptao->taomin * ray.d;
+	PhongMaterial *pmaterial = static_cast<PhongMaterial *>(ptao->materialmin);
+	glm::vec3 normal = normalize(pmaterial->bump(ptao->nmin, point));
 	glm::vec3 kd = pmaterial->getkd();
 	glm::vec3 ks = pmaterial->getks();
 	double shininess = pmaterial->getShininess();
@@ -35,7 +35,7 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 			TAO *stao = root->intersect(lightRay);
 
-			if (stao && stao->hit) continue;
+			if (stao) continue;
 
 			Ray halfRay(point, normalize(eyeRay.d + lightRay.d));
 			glm::vec3 intensity = light->getIntensity(lightRay);
@@ -88,10 +88,41 @@ glm::vec3 process(pixel p, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec
 
 	for (int i = 0; i < SAMPLE; i++) {
 		for (int j = 0; j < SAMPLE; j++) {
-			double rox = random(0, p.offset);
-			double roy = random(0, p.offset);
-			glm::vec3 direction = normalize(view + (-1 + 2 * (p.y + MIN((roy + j) / SAMPLE, p.offset)) / h) * up + (-1 + 2 * (p.x + MIN((rox + i) / SAMPLE, p.offset)) / w) * left);
+			double nx = random(p.x + i * p.offset / SAMPLE, p.x + (i + 1) * p.offset / SAMPLE);
+			double ny = random(p.y + i * p.offset / SAMPLE, p.y + (j + 1) * p.offset / SAMPLE);
+			glm::vec3 d = view + (-1 + 2 * (float)ny / h) * up + (-1 + 2 * (float)nx / w) * left;
+			//focus
+			// double aperture = 16;
+			// double focalDepth = 5;
+			// glm::vec3 apOffset = glm::vec3((-1 + 2 * (float)ny / h) * aperture, (-1 + 2 * (float)nx / w) * aperture, 0.0f);
+			// eye += apOffset;
+			// d = focalDepth * d;
+			// d -= apOffset;
+			glm::vec3 direction = normalize(d);
 			Ray ray(eye, direction);
+			// double f = 2;
+			// double dEyeImage = abs(eye.z);
+			// double dEyePixel = glm::length(d);
+			// glm::vec3 fp = eye + ((float)dEyePixel * (float)(dEyeImage + f) / (float)dEyeImage) * direction;
+			// double m = 4;
+			// ny -= m / 2;
+			// nx -= m / 2;
+			// glm::vec3 c = glm::vec3(0);
+			//
+			// for (int a = 0; a < SAMPLE; a++) {
+			// 	for (int b = 0; b < SAMPLE; b++) {
+			// 		double npx = random(nx + a * m / SAMPLE, nx + (a + 1) * m / SAMPLE);
+			// 		double npy = random(ny + b * m / SAMPLE, ny + (b + 1) * m / SAMPLE);
+			// 		d = view + (-1 + 2 * (float)npy / h) * up + (-1 + 2 * (float)npx / w) * left;
+			// 		glm::vec3 pxl = eye + d;
+			// 		direction = normalize(fp - pxl);
+			// 		Ray fray(pxl, direction);
+			// 		glm::vec3 fc = trace(root, fray, lights, ambient, 0);
+			// 		c += fc;
+			// 	}
+			// }
+			// c /= SAMPLE * SAMPLE;
+			// //end focus
 			glm::vec3 c = trace(root, ray, lights, ambient, 0);
 			colours.push_back(c);
 			colour += c;
@@ -103,10 +134,11 @@ glm::vec3 process(pixel p, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec
 	for (int k = 0; k < colours.size(); k++) {
 		for (int m = k; m < colours.size(); m++) {
 			glm::vec3 diff = glm::abs(colours[k] - colours[m]);
+			if (diff.x > THRESHOLD || diff.y > THRESHOLD || diff.z > THRESHOLD)
 #ifdef ADAPTIVE_FALSE_COLOR
-			if (diff.x > THRESHOLD || diff.y > THRESHOLD || diff.z > THRESHOLD) return glm::vec3(0);
+			return glm::vec3(0);
 #else
-			if (diff.x > THRESHOLD || diff.y > THRESHOLD || diff.z > THRESHOLD) goto stop;
+			goto adapt;
 #endif
 		}
 	}
