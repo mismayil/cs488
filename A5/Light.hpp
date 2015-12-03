@@ -15,6 +15,7 @@ public:
     virtual double getArea();
     virtual glm::vec3 getIntensity(Ray lightRay);
     virtual std::vector<Ray> getRays(glm::vec3 point);
+    virtual int getSamples();
 };
 
 std::ostream& operator<<(std::ostream& out, const Light& l);

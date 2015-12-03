@@ -29,6 +29,7 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 	for (Light *light : lights) {
 		vector<Ray> lightRays = light->getRays(point);
+		glm::vec3 tmpcolor = glm::vec3(0);
 
 		for (Ray lightRay : lightRays) {
 
@@ -36,12 +37,14 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 			if (stao && stao->hit) continue;
 
-			Ray lightReflectionRay(point, normalize(-lightRay.d + 2.0f * glm::dot(lightRay.d, normal) * normal));
+			Ray halfRay(point, normalize(eyeRay.d + lightRay.d));
 			glm::vec3 intensity = light->getIntensity(lightRay);
 			glm::vec3 diffuse = kd * (float) MAX(glm::dot(lightRay.d, normal), 0.0) * intensity;
-			glm::vec3 specular = ks * pow((float) MAX(glm::dot(lightReflectionRay.d, eyeRay.d), 0.0), shininess) * intensity;
-			colour += diffuse + specular;
+			glm::vec3 specular = ks * pow((float) MAX(glm::dot(normal, halfRay.d), 0.0), shininess) * intensity;
+			tmpcolor += diffuse + specular;
 		}
+
+		colour += tmpcolor / light->getSamples();
 	}
 
 	colour += kd * ambient;
@@ -100,12 +103,19 @@ glm::vec3 process(pixel p, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec
 	for (int k = 0; k < colours.size(); k++) {
 		for (int m = k; m < colours.size(); m++) {
 			glm::vec3 diff = glm::abs(colours[k] - colours[m]);
-			if (diff.x > THRESHOLD || diff.y > THRESHOLD || diff.z > THRESHOLD) goto adapt;
+#ifdef ADAPTIVE_FALSE_COLOR
+			if (diff.x > THRESHOLD || diff.y > THRESHOLD || diff.z > THRESHOLD) return glm::vec3(0);
+#else
+			if (diff.x > THRESHOLD || diff.y > THRESHOLD || diff.z > THRESHOLD) goto stop;
+#endif
 		}
 	}
 
-
+#ifdef ADAPTIVE_FALSE_COLOR
+	return glm::vec3(1);
+#else
 	stop: return colour / (SAMPLE * SAMPLE);
+#endif
 
 	adapt:
 		colour = glm::vec3(0);
@@ -164,6 +174,9 @@ void A5_Render(
 	up = normalize(up);
 	glm::vec3 left = normalize(glm::cross(view, up));
 
+	up = tan(RAD(fovy / 2)) * -up;
+	left = tan(RAD(fovy / 2)) * left;
+
 	int percent = 0;
 	cout << "progress: " << percent << " %"<< endl;
 
@@ -172,17 +185,17 @@ void A5_Render(
 
 			pixel p = {(double) x, (double) y, 1};
 
-			Ray ray(eye, normalize(view + (-1 + 2 * (0.5 + y) / h) * tan(RAD(fovy / 2)) * -up + (-1 + 2 * (0.5 + x) / w) * tan(RAD(fovy / 2)) * left));
+			Ray ray(eye, normalize(view + (-1 + 2 * (0.5 + y) / h) * up + (-1 + 2 * (0.5 + x) / w) * left));
 
 			TAO *ptao = root->intersect(ray);
 
-			image(x, y, 0) = 0.5 * x / w;
-			image(x, y, 1) = 0.5 * y / h;
-			image(x, y, 2) = 0.5 * (x + y) / (h + w);
+			image(x, y, 0) = (double) x / w;
+			image(x, y, 1) = (double) y / h;
+			image(x, y, 2) = (double) (x + y) / (h + w);
 
 			if (!ptao) continue;
 
-			glm::vec3 colour = process(p, eye, view, tan(RAD(fovy / 2)) * -up, tan(RAD(fovy / 2)) * left, root, ray, lights, ambient, w, h, 0);
+			glm::vec3 colour = process(p, eye, view, up, left, root, ray, lights, ambient, w, h, 0);
 
 			image(x, y, 0) = MIN(colour.x, 1.0);
 			image(x, y, 1) = MIN(colour.y, 1.0);

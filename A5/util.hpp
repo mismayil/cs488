@@ -10,7 +10,7 @@
 #include "PerlinNoise.hpp"
 
 #define EPS 1e-6
-#define THRESHOLD 0.05
+#define THRESHOLD 0.1
 #define SAMPLE 2
 #define SHADOW_SAMPLE 3
 #define MAX_DEPTH 5
@@ -30,11 +30,6 @@ struct plane {
 struct pixel {
     double x, y;
     double offset;
-};
-
-struct softRay {
-    Ray lightRay;
-    Ray shadowRay;
 };
 
 plane getplane(glm::vec3 a, glm::vec3 b, glm::vec3 c);

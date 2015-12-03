@@ -12,8 +12,8 @@ std::vector<Ray> AreaLight::getRays(glm::vec3 point) {
 
     for (int i = 0; i < SHADOW_SAMPLE; i++) {
         for (int j = 0; j < SHADOW_SAMPLE; j++) {
-            double rx = width / 2 + (random(0, width) + i) / SHADOW_SAMPLE;
-            double ry = height / 2 + (random(0, height) + j) / SHADOW_SAMPLE;
+            double rx = i * width / SHADOW_SAMPLE;
+            double ry = j * height / SHADOW_SAMPLE;
             glm::vec3 npos = position + glm::vec3(rx, ry, 0);
             glm::vec3 direction = normalize(npos - point);
             Ray lightRay(point + EPS * direction, direction);
@@ -23,3 +23,5 @@ std::vector<Ray> AreaLight::getRays(glm::vec3 point) {
 
     return v;
 }
+
+int AreaLight::getSamples() { return SHADOW_SAMPLE * SHADOW_SAMPLE; }

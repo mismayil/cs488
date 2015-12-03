@@ -18,8 +18,10 @@ std::vector<Ray> Light::getRays(glm::vec3 point) {
 
 glm::vec3 Light::getIntensity(Ray lightRay) {
     double distance = glm::length(lightRay.d);
-    return colour / (getArea() * (falloff[0] + falloff[1] * distance + falloff[2] * pow(distance, 2)));
+    return colour / (falloff[0] + falloff[1] * distance + falloff[2] * pow(distance, 2));
 }
+
+int Light::getSamples() { return 1; }
 
 std::ostream& operator<<(std::ostream& out, const Light& l)
 {

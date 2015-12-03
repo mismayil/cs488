@@ -28,7 +28,7 @@ sphere:scale(10, 10, 10)
 sphere:translate(0, 0, 10)
 sphere:set_material(mat5)
 
-area_light = gr.arealight({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, {1, 0, 0}, 10, 10)
+area_light = gr.arealight({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, {1, 0, 0}, 30, 30)
 white_light = gr.light({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
 orange_light = gr.light({400.0, 100.0, 150.0}, {0.7, 0.0, 0.7}, {1, 0, 0})
 

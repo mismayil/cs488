@@ -1,0 +1,14 @@
+Calling A5_Render(
+	SceneNode:[name:root, id:0]
+	Image(width:vec3(0.000000, 0.000000, 0.000000)
+	view: vec3(0.000000, 0.000000, -1.000000)
+	up:   vec3(0.000000, 1.000000, 0.000000)
+	fovy: 50
+	ambient: vec3(0.300000, 0.300000, 0.300000)
+	lights{
+		L[vec3(0.900000, 0.900000, 0.900000), vec3(-100.000000, 150.000000, 400.000000), 1, 0, 0]
+	}
+)
+progress: 0 %
+progress: 10 %
+progress: 20 %
