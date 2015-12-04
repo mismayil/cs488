@@ -14,11 +14,12 @@
 #define EPS 1e-4
 #define THRESHOLD 0.1
 #define SAMPLE 2
-#define SHADOW_SAMPLE 3
+#define SHADOW_SAMPLE 2
 #define DOF_SAMPLE 3
 #define MAX_DEPTH 5
 #define ADAPTIVE_DEPTH 1
 #define AIR_REF_INDEX 1
+#define NUM_THREADS 4
 #define MAX(a, b) (a < b ? b : a)
 #define MIN(a, b) (a < b ? a : b)
 #define RAD(a) (a * M_PI / 180)
@@ -55,5 +56,5 @@ void print(glm::vec3 v);
 glm::vec3 normalize(glm::vec3 v);
 bool eq(double a, double b);
 bool refract(glm::vec3 d, glm::vec3 n, double eta, glm::vec3 &t);
-void progress(int &percent, uint x, uint y, size_t w, size_t h);
+void progress(int id, int &percent, uint x, uint y, size_t w, size_t h);
 double random(double min, double max);

@@ -1,5 +1,6 @@
 #include "util.hpp"
 #include <iostream>
+#include <thread>
 
 using namespace std;
 
@@ -84,10 +85,10 @@ bool refract(glm::vec3 d, glm::vec3 n, double eta, glm::vec3 &t) {
 	return true;
 }
 
-void progress(int &percent, uint x, uint y, size_t w, size_t h) {
+void progress(int id, int &percent, uint x, uint y, size_t w, size_t h) {
     if (100 * (y+1) * (x+1) / ((h+1) * (w+1)) > (percent + 10)) {
         percent += 10;
-        cout << "progress: " << percent << " %"<< endl;
+        cout << "[thread " << id << "] : " << percent << " %"<< endl;
     }
 }
 

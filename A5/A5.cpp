@@ -1,4 +1,6 @@
 #include <glm/ext.hpp>
+#include <thread>
+#include <functional>
 #include "A5.hpp"
 #include "GeometryNode.hpp"
 #include "PhongMaterial.hpp"
@@ -169,6 +171,55 @@ glm::vec3 process(
 		return colour / 4;
 }
 
+void render (
+		uint sw,
+		uint ew,
+		uint sh,
+		uint eh,
+		size_t w,
+		size_t h,
+		SceneNode * root,
+		Image & image,
+		glm::vec3 eye,
+		glm::vec3 view,
+		glm::vec3 up,
+		glm::vec3 left,
+		double fovy,
+		const glm::vec3 ambient,
+		std::list<Light *> & lights,
+		DOF *dof,
+		int id
+) {
+	int percent = 0;
+
+	for (uint y = sh; y < eh; ++y) {
+		for (uint x = sw; x < ew; ++x) {
+
+			pixel p = {(double) x, (double) y, 1};
+
+			Ray ray(eye, normalize(view + (-1 + 2 * (0.5 + y) / h) * up + (-1 + 2 * (0.5 + x) / w) * left));
+
+			TAO *ptao = root->intersect(ray);
+
+			image(x, y, 0) = (double) x / w;
+			image(x, y, 1) = (double) y / h;
+			image(x, y, 2) = (double) (x + y) / (h + w);
+
+			if (!ptao) continue;
+
+			glm::vec3 colour = process(p, eye, view, up, left, root, ray, lights, ambient, dof, w, h, 0);
+
+			image(x, y, 0) = MIN(colour.x, 1.0);
+			image(x, y, 1) = MIN(colour.y, 1.0);
+			image(x, y, 2) = MIN(colour.z, 1.0);
+
+			progress(id, percent, x, y, w, h);
+		}
+	}
+
+	cout << "[thread " << id << "] : " << "100 %" << endl;
+}
+
 void A5_Render(
 		// What to render
 		SceneNode * root,
@@ -213,33 +264,13 @@ void A5_Render(
 	up = tan(RAD(fovy / 2)) * -up;
 	left = tan(RAD(fovy / 2)) * left;
 
-	int percent = 0;
-	cout << "progress: " << percent << " %"<< endl;
+	thread threads[NUM_THREADS];
 
-	for (uint y = 0; y < h; ++y) {
-		for (uint x = 0; x < w; ++x) {
-
-			pixel p = {(double) x, (double) y, 1};
-
-			Ray ray(eye, normalize(view + (-1 + 2 * (0.5 + y) / h) * up + (-1 + 2 * (0.5 + x) / w) * left));
-
-			TAO *ptao = root->intersect(ray);
-
-			image(x, y, 0) = (double) x / w;
-			image(x, y, 1) = (double) y / h;
-			image(x, y, 2) = (double) (x + y) / (h + w);
-
-			if (!ptao) continue;
-
-			glm::vec3 colour = process(p, eye, view, up, left, root, ray, lights, ambient, dof, w, h, 0);
-
-			image(x, y, 0) = MIN(colour.x, 1.0);
-			image(x, y, 1) = MIN(colour.y, 1.0);
-			image(x, y, 2) = MIN(colour.z, 1.0);
-
-			progress(percent, x, y, w, h);
-		}
+	for (int i = 0; i < NUM_THREADS; i++) {
+		threads[i] = thread(render, i * w / NUM_THREADS, (i + 1) * w / NUM_THREADS, 0, h, w, h, root, ref(image), eye, view, up, left, fovy, ambient, ref(lights), dof, i);
 	}
 
-	cout << "progress: 100 %" << endl;
+	for (int i = 0; i < NUM_THREADS; i++) {
+		threads[i].join();
+	}
 }
