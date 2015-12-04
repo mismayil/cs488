@@ -55,6 +55,7 @@
 #include "PhongMaterial.hpp"
 #include "TextureMaterial.hpp"
 #include "A5.hpp"
+#include "util.hpp"
 
 typedef std::map<std::string,Mesh*> MeshMap;
 static MeshMap mesh_map;
@@ -99,6 +100,12 @@ struct gr_material_ud {
 // allocated by Lua to represent lights.
 struct gr_light_ud {
   Light* light;
+};
+
+// The "userdata" type for a DOF (Depth of field). Objects of this type will be
+// allocated by Lua to represent focus.
+struct gr_dof_ud {
+  DOF* dof;
 };
 
 // Useful function to retrieve and check an n-tuple of numbers.
@@ -357,6 +364,26 @@ int gr_mesh_cmd(lua_State* L)
 	return 1;
 }
 
+// Make a DOF
+extern "C"
+int gr_dof_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+
+  gr_dof_ud* data = (gr_dof_ud*)lua_newuserdata(L, sizeof(gr_dof_ud));
+  data->dof = 0;
+
+  double focal = luaL_checknumber(L, 1);
+  double aperture = luaL_checknumber(L, 2);
+
+  data->dof = new DOF(focal, aperture);
+
+  luaL_newmetatable(L, "gr.dof");
+  lua_setmetatable(L, -2);
+
+  return 1;
+}
+
 // Make a point light
 extern "C"
 int gr_light_cmd(lua_State* L)
@@ -445,9 +472,14 @@ int gr_render_cmd(lua_State* L)
     lights.push_back(ldata->light);
     lua_pop(L, 1);
   }
+    DOF *dof = NULL;
+    if (lua_gettop(L) == 11) {
+        gr_dof_ud* ddata = (gr_dof_ud*) luaL_checkudata(L, 11, "gr.dof");
+        dof = ddata->dof;
+    }
 
 	Image im( width, height);
-	A5_Render(root->node, im, eye, view, up, fov, ambient, lights);
+	A5_Render(root->node, im, eye, view, up, fov, ambient, lights, dof);
     im.savePng( filename );
 
 	return 0;
@@ -463,6 +495,7 @@ int gr_material_cmd(lua_State* L)
   data->material = 0;
 
   int argc = lua_gettop(L);
+
   double kd[3], ks[3];
   double shininess = 0;
   double reflectiveness = 0;
@@ -691,6 +724,7 @@ static const luaL_Reg grlib_functions[] = {
   {"cylinder", gr_cylinder_cmd},
   {"cone", gr_cone_cmd},
   {"arealight",  gr_arealight_cmd},
+  {"dof", gr_dof_cmd},
   {0, 0}
 };
 

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <float.h>
+#include <vector>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include "TAO.hpp"
@@ -14,6 +15,7 @@
 #define THRESHOLD 0.1
 #define SAMPLE 2
 #define SHADOW_SAMPLE 3
+#define DOF_SAMPLE 3
 #define MAX_DEPTH 5
 #define ADAPTIVE_DEPTH 1
 #define AIR_REF_INDEX 1
@@ -37,6 +39,13 @@ struct plane {
 struct pixel {
     double x, y;
     double offset;
+};
+
+struct DOF {
+    double focal;
+    double aperture;
+    DOF(double focal, double aperture);
+    std::vector<Ray> getRays(double nx, double ny, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec3 left, glm::vec3 direction, size_t w, size_t h);
 };
 
 plane getplane(glm::vec3 a, glm::vec3 b, glm::vec3 c);

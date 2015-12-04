@@ -5,6 +5,7 @@
 #include "SceneNode.hpp"
 #include "Light.hpp"
 #include "Image.hpp"
+#include "util.hpp"
 
 void A5_Render(
 		// What to render
@@ -21,5 +22,6 @@ void A5_Render(
 
 		// Lighting parameters
 		const glm::vec3 & ambient,
-		std::list<Light *> & lights
+		std::list<Light *> & lights,
+		DOF *dof
 );

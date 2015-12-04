@@ -5,10 +5,10 @@
 #include "TextureMaterial.hpp"
 #include "TAO.hpp"
 #include "Ray.hpp"
-#include "util.hpp"
 
 using namespace std;
 
+// trace a ray
 glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3 &ambient, int depth) {
 	glm::vec3 colour = glm::vec3(0);
 
@@ -83,48 +83,50 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 	return colour + reflection;
 }
 
-glm::vec3 process(pixel p, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec3 left, SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3 &ambient, size_t w, size_t h, int depth) {
+// process a pixel
+glm::vec3 process(
+	pixel p,
+	glm::vec3 eye,
+	glm::vec3 view,
+	glm::vec3 up,
+	glm::vec3 left,
+	SceneNode *root,
+	Ray ray,
+	list<Light *> &lights,
+	const glm::vec3 &ambient,
+	DOF *dof,
+	size_t w,
+	size_t h,
+	int depth
+) {
 	vector<glm::vec3> colours;
 	glm::vec3 colour = glm::vec3(0);
 
 	for (int i = 0; i < SAMPLE; i++) {
 		for (int j = 0; j < SAMPLE; j++) {
 			double nx = random(p.x + i * p.offset / SAMPLE, p.x + (i + 1) * p.offset / SAMPLE);
-			double ny = random(p.y + i * p.offset / SAMPLE, p.y + (j + 1) * p.offset / SAMPLE);
-			glm::vec3 d = view + (-1 + 2 * (float)ny / h) * up + (-1 + 2 * (float)nx / w) * left;
-			//focus
-			// double aperture = 16;
-			// double focalDepth = 5;
-			// glm::vec3 apOffset = glm::vec3((-1 + 2 * (float)ny / h) * aperture, (-1 + 2 * (float)nx / w) * aperture, 0.0f);
-			// eye += apOffset;
-			// d = focalDepth * d;
-			// d -= apOffset;
-			glm::vec3 direction = normalize(d);
-			Ray ray(eye, direction);
-			// double f = 2;
-			// double dEyeImage = abs(eye.z);
-			// double dEyePixel = glm::length(d);
-			// glm::vec3 fp = eye + ((float)dEyePixel * (float)(dEyeImage + f) / (float)dEyeImage) * direction;
-			// double m = 4;
-			// ny -= m / 2;
-			// nx -= m / 2;
-			// glm::vec3 c = glm::vec3(0);
-			//
-			// for (int a = 0; a < SAMPLE; a++) {
-			// 	for (int b = 0; b < SAMPLE; b++) {
-			// 		double npx = random(nx + a * m / SAMPLE, nx + (a + 1) * m / SAMPLE);
-			// 		double npy = random(ny + b * m / SAMPLE, ny + (b + 1) * m / SAMPLE);
-			// 		d = view + (-1 + 2 * (float)npy / h) * up + (-1 + 2 * (float)npx / w) * left;
-			// 		glm::vec3 pxl = eye + d;
-			// 		direction = normalize(fp - pxl);
-			// 		Ray fray(pxl, direction);
-			// 		glm::vec3 fc = trace(root, fray, lights, ambient, 0);
-			// 		c += fc;
-			// 	}
-			// }
-			// c /= SAMPLE * SAMPLE;
-			// //end focus
-			glm::vec3 c = trace(root, ray, lights, ambient, 0);
+			double ny = random(p.y + j * p.offset / SAMPLE, p.y + (j + 1) * p.offset / SAMPLE);
+			glm::vec3 direction = view + (-1 + 2 * (float)ny / h) * up + (-1 + 2 * (float)nx / w) * left;
+			glm::vec3 c;
+
+			if (dof) {
+
+				vector<Ray> frays = dof->getRays(nx, ny, eye, view, up, left, direction, w, h);
+
+				for (Ray fray : frays) {
+					glm::vec3 fc = trace(root, fray, lights, ambient, 0);
+					c += fc;
+				}
+
+				c /= DOF_SAMPLE * DOF_SAMPLE;
+
+			} else {
+
+				Ray ray(eye, normalize(direction));
+				c = trace(root, ray, lights, ambient, 0);
+
+			}
+
 			colours.push_back(c);
 			colour += c;
 		}
@@ -159,10 +161,10 @@ glm::vec3 process(pixel p, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec
 		pixel p2 = {nx, p.y, noffset};
 		pixel p3 = {p.x, ny, noffset};
 		pixel p4 = {nx, ny, noffset};
-		colour += process(p1, eye, view, up, left, root, ray, lights, ambient, w, h, depth + 1);
-		colour += process(p2, eye, view, up, left, root, ray, lights, ambient, w, h, depth + 1);
-		colour += process(p3, eye, view, up, left, root, ray, lights, ambient, w, h, depth + 1);
-		colour += process(p4, eye, view, up, left, root, ray, lights, ambient, w, h, depth + 1);
+		colour += process(p1, eye, view, up, left, root, ray, lights, ambient, dof, w, h, depth + 1);
+		colour += process(p2, eye, view, up, left, root, ray, lights, ambient, dof, w, h, depth + 1);
+		colour += process(p3, eye, view, up, left, root, ray, lights, ambient, dof, w, h, depth + 1);
+		colour += process(p4, eye, view, up, left, root, ray, lights, ambient, dof, w, h, depth + 1);
 
 		return colour / 4;
 }
@@ -182,12 +184,13 @@ void A5_Render(
 
 		// Lighting parameters
 		const glm::vec3 & ambient,
-		std::list<Light *> & lights
+		std::list<Light *> & lights,
+		DOF *dof
 ) {
 
   std::cout << "Calling A5_Render(\n" <<
 		  "\t" << *root <<
-          "\t" << "Image(width:" << to_string(eye) << std::endl <<
+          "\t" << "Image(eye:" << glm::to_string(eye) << std::endl <<
 		  "\t" << "view: " << glm::to_string(view) << std::endl <<
 		  "\t" << "up:   " << glm::to_string(up) << std::endl <<
 		  "\t" << "fovy: " << fovy << std::endl <<
@@ -228,7 +231,7 @@ void A5_Render(
 
 			if (!ptao) continue;
 
-			glm::vec3 colour = process(p, eye, view, up, left, root, ray, lights, ambient, w, h, 0);
+			glm::vec3 colour = process(p, eye, view, up, left, root, ray, lights, ambient, dof, w, h, 0);
 
 			image(x, y, 0) = MIN(colour.x, 1.0);
 			image(x, y, 1) = MIN(colour.y, 1.0);

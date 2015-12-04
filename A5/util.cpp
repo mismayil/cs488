@@ -16,6 +16,31 @@ double intersectPLane(struct plane plane, Ray ray) {
     return -(plane.A * ray.o.x + plane.B * ray.o.y + plane.C * ray.o.z + plane.D) / (plane.A * ray.d.x + plane.B * ray.d.y + plane.C * ray.d.z);
 }
 
+DOF::DOF(double focal, double aperture) : focal(focal), aperture(aperture) {}
+
+vector<Ray> DOF::getRays(double nx, double ny, glm::vec3 eye, glm::vec3 view, glm::vec3 up, glm::vec3 left, glm::vec3 direction, size_t w, size_t h) {
+    double dEyeImage = 1;
+    double dEyePixel = glm::length(direction);
+    glm::vec3 fp = eye + ((float)dEyePixel * (float)(dEyeImage + focal) / (float)dEyeImage) * normalize(direction);
+    if (ny - aperture / 2 > 0) ny -= aperture / 2;
+    if (nx - aperture / 2 > 0) nx -= aperture / 2;
+    glm::vec3 c = glm::vec3(0);
+    vector<Ray> frays;
+
+    for (int a = 0; a < SAMPLE; a++) {
+        for (int b = 0; b < SAMPLE; b++) {
+            double npx = random(nx + a * aperture / DOF_SAMPLE, nx + (a + 1) * aperture / DOF_SAMPLE);
+            double npy = random(ny + b * aperture / DOF_SAMPLE, ny + (b + 1) * aperture / DOF_SAMPLE);
+            glm::vec3 d = view + (-1 + 2 * (float)npy / h) * up + (-1 + 2 * (float)npx / w) * left;
+            glm::vec3 pxl = eye + d;
+            Ray fray(pxl, normalize(fp - pxl));
+            frays.push_back(fray);
+        }
+    }
+
+    return frays;
+}
+
 TAO *intersectTriangle(Ray ray, glm::vec3 u, glm::vec3 v, glm::vec3 w) {
     double a = u.x - v.x;
     double b = u.y - v.y;
