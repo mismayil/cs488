@@ -56,12 +56,18 @@ lightpanel:translate(-10, 50, 50)
 
 sphere = gr.sphere('sphere')
 scene:add_child(sphere)
-sphere:scale(10, 10, 10)
+sphere:scale(20, 20, 20)
 sphere:translate(0, 0, 10)
 sphere:set_material(tmat1)
 
-area_light = gr.arealight({0.0, 150.0, -200.0}, {1.0, 1.0, 1.0}, {1, 0, 0}, 20, 20)
---white_light = gr.light({-100.0, 150.0, 400.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
+cube = gr.cube('cube')
+scene:add_child(cube)
+cube:scale(20, 20, 20)
+cube:translate(0, 0, 60)
+cube:set_material(mat3)
+
+area_light = gr.arealight({-10, 50, 0.0}, {1.0, 1.0, 1.0}, {1, 0, 0}, 20, 20)
+white_light = gr.light({-10, 45, -150.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
 --orange_light = gr.light({400.0, 100.0, 150.0}, {0.7, 0.0, 0.7}, {1, 0, 0})
 
 dof = gr.dof(5, 32)

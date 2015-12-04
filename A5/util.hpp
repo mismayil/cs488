@@ -13,8 +13,8 @@
 
 #define EPS 1e-4
 #define THRESHOLD 0.1
-#define SAMPLE 2
-#define SHADOW_SAMPLE 2
+#define SAMPLE 3
+#define SHADOW_SAMPLE 3
 #define DOF_SAMPLE 3
 #define MAX_DEPTH 5
 #define ADAPTIVE_DEPTH 1

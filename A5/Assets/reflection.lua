@@ -8,8 +8,8 @@ grey = gr.material({0.5, 0.5, 0.5}, {0.1, 0.1, 0.1}, 5)
 white = gr.material({1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, 25)
 mirror = gr.material({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 5, 0.5)
 
-mat1 = gr.material({0.0, 0.0, 0.0}, {0.5, 0.3, 0.5}, 5, 0.5, 1.33, 1.0)
-mat2 = gr.material({0.5, 0.5, 0.5}, {0.5, 0.7, 0.5}, 25, 0.3)
+mat1 = gr.material({0.3, 0.3, 0.5}, {0.5, 0.3, 0.5}, 10, 0.5)
+mat2 = gr.material({0.5, 0.5, 0.5}, {0.5, 0.7, 0.5}, 25)
 mat3 = gr.material({1.0, 0.6, 0.1}, {0.5, 0.7, 0.5}, 25)
 mat4 = gr.material({0.7, 0.6, 1.0}, {0.5, 0.4, 0.8}, 25)
 mat5 = gr.material({1.0, 1.0, 1.0}, {0.5, 0.5, 0.5}, 25)
@@ -39,7 +39,7 @@ leftwall:translate(-50, -50, 0)
 
 rightwall = gr.cube('rightwall')
 scene:add_child(rightwall)
-rightwall:set_material(red)
+rightwall:set_material(mirror)
 rightwall:scale(0.1, 100, 100)
 rightwall:translate(50, -50, 0)
 
@@ -58,15 +58,15 @@ lightpanel:translate(-10, 50, 50)
 sphere = gr.sphere('sphere')
 scene:add_child(sphere)
 sphere:scale(20, 20, 20)
-sphere:translate(0, -25, 80)
+sphere:translate(10, -25, 20)
 sphere:set_material(mat1)
 
 cube = gr.cube('cube')
 scene:add_child(cube)
-cube:scale(20, 50, 20)
-cube:translate(-20, -50, 20)
-cube:rotate('y', 45)
-cube:set_material(mat2)
+cube:scale(20, 20, 20)
+cube:translate(-20, -50, 60)
+cube:rotate('y', -45)
+cube:set_material(mat3)
 
 area_light = gr.arealight({-10, 50, -100}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
 --white_light = gr.light({-10, 45, -150.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
@@ -74,6 +74,6 @@ area_light = gr.arealight({-10, 50, -100}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
 
 dof = gr.dof(5, 32)
 
-gr.render(scene, 'refraction.png', 512, 512,
+gr.render(scene, 'reflection.png', 512, 512,
 	  {0, 0, 0}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.3, 0.3, 0.3}, {area_light})
