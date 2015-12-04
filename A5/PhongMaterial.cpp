@@ -45,20 +45,22 @@ double PhongMaterial::getTransparency() {
 }
 
 glm::vec3 PhongMaterial::bump(glm::vec3 n, glm::vec3 point) {
-	if (eq(m_bumpness, 0.0)) return n;
-	std::cout << "hey" << std::endl;
-	glm::vec3 nn, pp;
-	pp = 0.1f * point;
-	double noiseCoefx = perlin->noise(pp.x, pp.y, pp.z);
-	double noiseCoefy = perlin->noise(pp.y, pp.z, pp.x);
-	double noiseCoefz = perlin->noise(pp.z, pp.x, pp.y);
-	nn.x = (1.0f - m_bumpness) * nn.x + m_bumpness * noiseCoefx;
-	nn.y = (1.0f - m_bumpness) * nn.y + m_bumpness * noiseCoefy;
-	nn.z = (1.0f - m_bumpness) * nn.z + m_bumpness * noiseCoefz;
-	double tmp = glm::dot(nn, nn);
-	if (eq(tmp, 0.0)) return nn;
-	tmp = 1.0 / sqrt(tmp);
-	return (float) tmp + nn;
+	if (m_bumpness > 0) {
+		glm::vec3 nn, pp;
+		pp = 0.1f * point;
+		double noiseCoefx = perlin->noise(pp.x, pp.y, pp.z);
+		double noiseCoefy = perlin->noise(pp.y, pp.z, pp.x);
+		double noiseCoefz = perlin->noise(pp.z, pp.x, pp.y);
+		nn.x = (1.0f - m_bumpness) * nn.x + m_bumpness * noiseCoefx;
+		nn.y = (1.0f - m_bumpness) * nn.y + m_bumpness * noiseCoefy;
+		nn.z = (1.0f - m_bumpness) * nn.z + m_bumpness * noiseCoefz;
+		double tmp = glm::dot(nn, nn);
+		if (eq(tmp, 0.0)) return nn;
+		tmp = 1.0 / sqrt(tmp);
+		return (float) tmp + nn;
+	}
+
+	return n;
 }
 
 PerlinNoise* PhongMaterial::getpn() {
