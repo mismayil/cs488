@@ -64,16 +64,16 @@ sphere:set_material(mat1)
 cube = gr.cube('cube')
 scene:add_child(cube)
 cube:scale(20, 50, 20)
-cube:translate(-20, -50, 20)
+cube:translate(-80, -50, 20)
 cube:rotate('y', 45)
 cube:set_material(mat2)
 
 area_light = gr.arealight({-10, 50, -100}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
---white_light = gr.light({-10, 45, -150.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
---orange_light = gr.light({400.0, 100.0, 150.0}, {0.7, 0.0, 0.7}, {1, 0, 0})
+white_light = gr.light({10, 40, -80.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
+orange_light = gr.light({20, 20.0, -60.0}, {0.7, 0.0, 0.7}, {1, 0, 0})
 
 dof = gr.dof(5, 32)
 
 gr.render(scene, 'refraction.png', 512, 512,
 	  {0, 0, 0}, {0, 0, -1}, {0, 1, 0}, 50,
-	  {0.3, 0.3, 0.3}, {area_light})
+	  {0.3, 0.3, 0.3}, {white_light, orange_light})

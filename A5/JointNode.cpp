@@ -54,6 +54,7 @@ TAO* JointNode::join(TAO *B, TAO* C) {
 
 			if (B->taomax > C->taomax) maxtao = B;
 			else maxtao = C;
+
 			break;
 
 		case INTERSECTION:
