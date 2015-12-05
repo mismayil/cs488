@@ -24,6 +24,7 @@ TAO* JointNode::intersect(Ray ray) {
 	for (it++; it != children.end(); it++) {
 		B = (*it)->intersect(ray);
 		A = join(A, B);
+		if (B) delete B;
 	}
 
 	return A;

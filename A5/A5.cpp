@@ -38,7 +38,10 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 			TAO *stao = root->intersect(lightRay);
 
-			if (stao) continue;
+			if (stao) {
+				delete stao;
+				continue;
+			}
 
 			Ray halfRay(point, normalize(eyeRay.d + lightRay.d));
 			glm::vec3 intensity = light->getIntensity(lightRay);
@@ -66,12 +69,23 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 		double eta = AIR_REF_INDEX / refractiveness;
 
 		if (glm::dot(viewRay.d, normal) < 0) {
-			if (!refract(viewRay.d, normal, eta, direction)) return reflection;
+
+			if (!refract(viewRay.d, normal, eta, direction)) {
+				if (ptao) delete ptao;
+				return reflection;
+			}
+
 			Ray refractionRay(point + EPS * direction, direction);
 			refraction = trace(root, refractionRay, lights, ambient, depth + 1) * transparency;
 			costheta = -glm::dot(viewRay.d, normal);
+
 		} else {
-			if (!refract(viewRay.d, -normal, 1.0 / eta, direction)) return reflection;
+
+			if (!refract(viewRay.d, -normal, 1.0 / eta, direction)) {
+				if (ptao) delete ptao;
+				return reflection;
+			}
+
 			Ray refractionRay(point + EPS * direction, direction);
 			refraction = trace(root, refractionRay, lights, ambient, depth + 1) * transparency;
 			costheta = glm::dot(refractionRay.d, normal);
@@ -79,9 +93,12 @@ glm::vec3 trace(SceneNode *root, Ray ray, list<Light *> &lights, const glm::vec3
 
 		double R0 = pow(eta - 1, 2) / pow(eta + 1, 2);
 		double R = R0 + (1 - R0) * pow(1 - costheta, 5);
+
+		if (ptao) delete ptao;
 		return R * reflection + (1 - R) * refraction;
 	}
 
+	if (ptao) delete ptao;
 	return colour + reflection;
 }
 
@@ -206,6 +223,8 @@ void render (
 			image(x, y, 2) = (double) (x + y) / (h + w);
 
 			if (!ptao) continue;
+
+			delete ptao;
 
 			glm::vec3 colour = process(p, eye, view, up, left, root, ray, lights, ambient, dof, w, h, 0);
 

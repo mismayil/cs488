@@ -87,6 +87,6 @@ white_light = gr.light({-10, 45, -50.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
 black_light = gr.light({0, 50, -50}, {0.0, 0.0, 0.0}, {1, 0, 0}, 20, 20)
 
 
-gr.render(scene, 'dice.png', 512, 512,
+gr.render(scene, 'images/dice.png', 512, 512,
 	  {0, 0, 0}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.3, 0.3, 0.3}, {white_light})

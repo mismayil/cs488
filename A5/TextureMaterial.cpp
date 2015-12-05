@@ -7,7 +7,8 @@ TextureMaterial::TextureMaterial(const char *filename, glm::vec3 ks, double shin
 }
 
 TextureMaterial::~TextureMaterial() {
-    delete texture;
+    if (texture) delete texture;
+    if (uv) delete uv;
 }
 
 Image* TextureMaterial::getTexture() {

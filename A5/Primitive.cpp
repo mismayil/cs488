@@ -17,7 +17,7 @@ Sphere::Sphere() {
 }
 
 Sphere::~Sphere() {
-    delete nsphere;
+    if (nsphere) delete nsphere;
 }
 
 TAO* Sphere::intersect(Ray ray) {
@@ -41,7 +41,7 @@ int* Cube::mapuv(glm::vec3 point, glm::vec3 n, Image *texture) {
 }
 
 Cube::~Cube() {
-    delete nbox;
+    if (nbox) delete nbox;
 }
 
 Cylinder::Cylinder() {
@@ -49,7 +49,7 @@ Cylinder::Cylinder() {
 }
 
 Cylinder::~Cylinder() {
-    delete ncylinder;
+    if (ncylinder) delete ncylinder;
 }
 
 TAO* Cylinder::intersect(Ray ray) {
@@ -61,7 +61,7 @@ Cone::Cone() {
 }
 
 Cone::~Cone() {
-    delete ncone;
+    if (ncone) delete ncone;
 }
 
 TAO* Cone::intersect(Ray ray) {

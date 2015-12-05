@@ -11,6 +11,9 @@ GeometryNode::GeometryNode(
 	m_nodeType = NodeType::GeometryNode;
 }
 
+GeometryNode::~GeometryNode() {
+}
+
 void GeometryNode::setMaterial( Material *mat )
 {
 	// Obviously, there's a potential memory leak here.  A good solution

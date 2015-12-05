@@ -1,0 +1,25 @@
+black_pieces = {}
+num_black_pieces = 6
+
+for i = 1, num_black_pieces do
+	piece = gr.cylinder('piece' .. tostring(i))
+	backgammon:add_child(piece)
+	piece:set_material(black_piece_mat)
+	piece:scale(2, 1, 2)
+	piece:translate(0, -25, 25)
+	piece:translate(math.random(-20, 20), 0, math.random(-30, 30))
+	black_pieces[i] = piece
+end
+
+white_pieces = {}
+num_white_pieces = 6
+
+for i = 1, num_white_pieces do
+	piece = gr.cylinder('piece' .. tostring(i))
+	backgammon:add_child(piece)
+	piece:set_material(white_piece_mat)
+	piece:scale(2, 1, 2)
+	piece:translate(-5, -25, 10)
+	piece:translate(math.random(0, 20), 0, math.random(0, 30))
+	white_pieces[i] = piece
+end

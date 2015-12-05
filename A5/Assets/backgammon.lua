@@ -3,15 +3,14 @@
 -- materials
 board_mat = gr.textmaterial('Assets/backgammon.png', {0.3, 0.3, 0.3}, 20)
 wood_mat = gr.textmaterial('Assets/wood.png', {0.3, 0.3, 0.3}, 20)
-piece_mat = gr.material({0.1, 0.49, 0.39}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1.2)
+black_piece_mat = gr.material({0.1, 0.49, 0.39}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1.2)
+white_piece_mat = gr.material({0.96, 0.94, 0.9}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1.2)
 white = gr.material({0.9, 0.9, 0.9}, {1.0, 1.0, 1.0}, 25)
 black = gr.material({0.1, 0.1, 0.1}, {0.5, 0.5, 0.5}, 25, 0.5)
 
 -- create a dice
 function create_dice()
 	dice = gr.node('dice')
-	dice:translate(-15, -15, 0)
-	dice:scale(0.5, 0.5, 0.5)
 
 	CUBE_SIZE = 10
 
@@ -113,22 +112,17 @@ backside:set_material(wood_mat)
 backside:scale(100, 5, 0.1)
 backside:translate(-25, -25, 0)
 
-blackpieces = {}
-num_pieces = 6
 
-for i = 1, num_pieces do
-	piece = gr.cylinder('piece' .. tostring(i))
-	backgammon:add_child(piece)
-	piece:set_material(piece_mat)
-	piece:scale(2, 1, 2)
-	piece:translate(0, -25, 25)
-	piece:translate(i, 0, i * 5)
-	pieces[i] = piece
-end
 
-dice = create_dice()
-dice:translate(0, -50, 0)
-backgammon:add_child(dice)
+dices = {}
+dices[0] = create_dice()
+--dices[1] = create_dice()
+dices[0]:scale(10, 10, 10)
+--dices[1]:scale(2, 2, 2)
+dices[0]:translate(0, -25, 25)
+--dices[1]:translate(0, -25, 35)
+backgammon:add_child(dices[0])
+--backgammon:add_child(dices[1])
 
 area_light = gr.arealight({-10, 50, -100}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
 --white_light = gr.light({10, 40, -80.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
@@ -136,6 +130,6 @@ area_light = gr.arealight({-10, 50, -100}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
 
 dof = gr.dof(5, 32)
 
-gr.render(scene, 'backgammon.png', 512, 512,
+gr.render(scene, 'images/backgammon.png', 512, 512,
 	  {0, -20, -15}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.3, 0.3, 0.3}, {area_light})
