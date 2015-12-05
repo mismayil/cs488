@@ -28,7 +28,7 @@ backwall:translate(-100, -100, 0)
 
 bottomwall = gr.cube('bottomwall')
 scene:add_child(bottomwall)
-bottomwall:set_material(checkerboard)
+bottomwall:set_material(grey)
 bottomwall:scale(100, 0.1, 100)
 bottomwall:translate(-50, -50, 0)
 
@@ -60,14 +60,20 @@ sphere = gr.sphere('sphere')
 scene:add_child(sphere)
 sphere:scale(20, 20, 20)
 sphere:translate(10, -25, 30)
-sphere:set_material(world)
+sphere:set_material(mat1)
 
 cube = gr.cube('cube')
 scene:add_child(cube)
 cube:scale(20, 20, 20)
 cube:translate(-60, -50, 60)
 cube:rotate('y', 45)
-cube:set_material(parket)
+cube:set_material(mat4)
+
+sphere = gr.sphere('sphere')
+scene:add_child(sphere)
+sphere:scale(20, 20, 20)
+sphere:translate(30, -25, 150)
+sphere:set_material(mat1)
 
 area_light = gr.arealight({-10, 50, -100}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
 white_light = gr.light({10, 40, -80.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
@@ -77,4 +83,4 @@ dof = gr.dof(5, 32)
 
 gr.render(scene, 'images/dof.png', 512, 512,
 	  {0, 0, 0}, {0, 0, -1}, {0, 1, 0}, 50,
-	  {0.3, 0.3, 0.3}, {area_light}, dof)
+	  {0.3, 0.3, 0.3}, {white_light}, dof)

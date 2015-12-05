@@ -4,14 +4,11 @@ Compile:
     By default, OPT=1 and AABB=0
 Run:
     ./A5 lua-file
-    Note: I have changed all paths relative to Assets directory, so please run them inside A4, not Assets!
+    Note: I have changed all paths relative to Assets directory, so please run them inside A5, not Assets and specify path as Assets/lua-file.
 
-Lab computer: gl35
+Lab computer: gl32
 
 Extra feature:
-    All features have been implemented and as an extra feature I implemented supersampling over 9 rays (3x3 grid).
+    All objectives have been implemented and as an extra objective multithreading has been added to speed up the process.
 
-Acceleration:
-    Acceleration is enabled by default. If you want to switch it off, just compile with OPT=0.
-    Note that AABB will not work if OPT is turned off.
-    As to timing, when I ran macho-cows.lua before optimization, it didnt even finish and OS killed the process. After acceleration it finishes within couple of minutes.
+All final images are in demo folder and images folder also contains other intermediate images and files.

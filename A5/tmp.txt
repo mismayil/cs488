@@ -23,3 +23,14 @@ for i = 1, num_white_pieces do
 	piece:translate(math.random(0, 20), 0, math.random(0, 30))
 	white_pieces[i] = piece
 end
+
+dices = {}
+dices[0] = create_dice()
+dices[1] = create_dice()
+dices[0]:scale(0.1, 0.1, 0.1)
+dices[1]:scale(0.1, 0.1, 0.1)
+dices[0]:translate(0, -25, 60)
+dices[1]:translate(5, -25, 70)
+dices[0]:rotate('y', 90)
+backgammon:add_child(dices[0])
+backgammon:add_child(dices[1])

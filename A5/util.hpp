@@ -19,10 +19,12 @@
 #define MAX_DEPTH 5
 #define ADAPTIVE_DEPTH 1
 #define AIR_REF_INDEX 1
-#define NUM_THREADS 4
+#define NUM_THREADS 16
 #define MAX(a, b) (a < b ? b : a)
 #define MIN(a, b) (a < b ? a : b)
 #define RAD(a) (a * M_PI / 180)
+
+#undef ADAPTIVE_FALSE_COLOR
 
 enum OPERATION {
     UNION,

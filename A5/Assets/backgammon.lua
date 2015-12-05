@@ -7,6 +7,9 @@ black_piece_mat = gr.material({0.1, 0.49, 0.39}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1
 white_piece_mat = gr.material({0.96, 0.94, 0.9}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1.2)
 white = gr.material({0.9, 0.9, 0.9}, {1.0, 1.0, 1.0}, 25)
 black = gr.material({0.1, 0.1, 0.1}, {0.5, 0.5, 0.5}, 25, 0.5)
+mirror_mat = gr.material({0.0, 0.0, 0.0}, {0.3, 0.3, 0.3}, 10, 1.0)
+meeting = gr.textmaterial('Assets/meeting.png', {0.3, 0.3, 0.3}, 20)
+tmat2 = gr.textmaterial('Assets/checkerboard.png', {0.5, 0.4, 0.8}, 25)
 
 -- create a dice
 function create_dice()
@@ -112,24 +115,55 @@ backside:set_material(wood_mat)
 backside:scale(100, 5, 0.1)
 backside:translate(-25, -25, 0)
 
+mirror = gr.cube('mirror')
+backgammon:add_child(mirror)
+mirror:set_material(mirror_mat)
+mirror:scale(200, 100, 0.1)
+mirror:translate(-75, -25, -5)
 
+black_pieces = {}
+num_black_pieces = 6
+
+for i = 1, num_black_pieces do
+	piece = gr.cylinder('piece' .. tostring(i))
+	backgammon:add_child(piece)
+	piece:set_material(black_piece_mat)
+	piece:scale(2, 1, 2)
+	piece:translate(0, -25, 25)
+	piece:translate(math.random(-20, 20), 0, math.random(-30, 30))
+	black_pieces[i] = piece
+end
+
+white_pieces = {}
+num_white_pieces = 6
+
+for i = 1, num_white_pieces do
+	piece = gr.cylinder('piece' .. tostring(i))
+	backgammon:add_child(piece)
+	piece:set_material(white_piece_mat)
+	piece:scale(2, 1, 2)
+	piece:translate(-5, -25, 10)
+	piece:translate(math.random(0, 20), 0, math.random(0, 30))
+	white_pieces[i] = piece
+end
 
 dices = {}
 dices[0] = create_dice()
---dices[1] = create_dice()
-dices[0]:scale(10, 10, 10)
---dices[1]:scale(2, 2, 2)
-dices[0]:translate(0, -25, 25)
---dices[1]:translate(0, -25, 35)
+dices[1] = create_dice()
+dices[0]:scale(0.1, 0.1, 0.1)
+dices[1]:scale(0.1, 0.1, 0.1)
+dices[0]:translate(0, -25, 60)
+dices[1]:translate(5, -25, 70)
+dices[0]:rotate('y', 90)
 backgammon:add_child(dices[0])
---backgammon:add_child(dices[1])
+backgammon:add_child(dices[1])
 
 area_light = gr.arealight({-10, 50, -100}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
---white_light = gr.light({10, 40, -80.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
+white_light = gr.light({10, 40, -80.0}, {0.9, 0.9, 0.9}, {1, 0, 0})
 --orange_light = gr.light({20, 20.0, -60.0}, {0.7, 0.0, 0.7}, {1, 0, 0})
 
-dof = gr.dof(5, 32)
+dof = gr.dof(5, 16)
 
 gr.render(scene, 'images/backgammon.png', 512, 512,
 	  {0, -20, -15}, {0, 0, -1}, {0, 1, 0}, 50,
-	  {0.3, 0.3, 0.3}, {area_light})
+	  {0.3, 0.3, 0.3}, {area_light}, dof)

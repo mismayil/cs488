@@ -164,11 +164,11 @@ glm::vec3 process(
 #endif
 		}
 	}
-
+	stop:
 #ifdef ADAPTIVE_FALSE_COLOR
 	return glm::vec3(1);
 #else
-	stop: return colour / (SAMPLE * SAMPLE);
+ 	return colour / (SAMPLE * SAMPLE);
 #endif
 
 	adapt:
