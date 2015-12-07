@@ -1,11 +1,11 @@
 -- Final Scene : Ray traced Backgammon
 
 -- materials
-board_mat = gr.textmaterial('Assets/backgammon.png', {0.3, 0.3, 0.3}, 20)
+board_mat = gr.textmaterial('Assets/backgammon.png', {0.3, 0.3, 0.3}, 20, 0.5)
 wood_mat = gr.textmaterial('Assets/wood.png', {0.3, 0.3, 0.3}, 20)
 black_piece_mat = gr.material({0.1, 0.49, 0.39}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1.2)
 white_piece_mat = gr.material({0.96, 0.94, 0.9}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1.2)
-white = gr.material({0.9, 0.9, 0.9}, {1.0, 1.0, 1.0}, 25)
+white = gr.material({0.9, 0.9, 0.9}, {1.0, 1.0, 1.0}, 25, 0.5, 1.3, 0.3)
 black = gr.material({0.1, 0.1, 0.1}, {0.5, 0.5, 0.5}, 25)
 meeting = gr.textmaterial('Assets/meeting.png', {0.3, 0.3, 0.3}, 20)
 tram = gr.textmaterial('Assets/tram.png', {0.3, 0.3, 0.3}, 10)
@@ -178,4 +178,4 @@ dof = gr.dof(5, 16)
 
 gr.render(scene, 'images/backgammon.png', 512, 512,
 	  {0, -20, -15}, {0, 0, -1}, {0, 1, 0}, 50,
-	  {0.3, 0.3, 0.3}, {area_light}, dof)
+	  {0.3, 0.3, 0.3}, {area_light})

@@ -1,0 +1,62 @@
+\documentclass {article}
+\usepackage{fullpage}
+
+\begin{document}
+
+~\vfill
+\begin{center}
+\Large
+
+{\bf A5 Project Report}
+
+{\bf Title:} Ray traced Backgammon
+
+{\bf Name:} Mahammad Ismayilzada
+
+{\bf Student ID:} 20496519
+
+{\bf User ID:} mismayil
+\end{center}
+\vfill ~\vfill~
+\newpage
+\begin{description}
+\item[Compile]:\\
+The project is compiled as before by invoking make. There are 2 define directives(OPT and AABB) from A4 that can be added to make
+which will enable the acceleration and draw only Axis Aligned Bounded Boxes respectively, but OPT is enabled by default and AABB
+won't be needed as there no meshes rendered in my project scenes.
+
+\item[Run]:\\
+The project is run by invoking ./A5 Assets/lua-file. Produced images are stored in images directory.
+
+\item[External libraries]:\\
+I have used perlin noise generating function by Ken Perlin from codermind.com to implement the bump mapping and the source code is in PerlinNoise.{hpp, cpp} files.
+
+\item[Objectives]:\\
+I have implemented all my objectives listed on proposal, but could not finish the extra objective motion blur as I mentioned in the proposal. However, to speed up the process
+of rendering multithreading has been added as an extra objective. Each of 4 threads is allocated one fourth of the image to render and progress for each thread is printed out while
+program is running. You can change the number of threads by simply modifying NUM\_THREADS in util.hpp and building again. Addition to that, all config parameters(such as number of soft shadow
+rays, recursive tracing depth etc). are also in util.hpp and can be adjusted accordingly. \\
+- Texture mapping only supports png files. To see the adaptive antialiasing, ADAPTIVE\_FALSE\_COLOR should be defined in util.hpp which is undefined by default.\\\\
+- {\bf gr.material} command has been extended and overloaded as follows:\\
+gr.material(kd, ks) \\
+gr.material(kd, ks, shininess) \\
+gr.material(kd, ks, shininess, reflectiveness) \\
+gr.material(kd, ks, shininess, reflectiveness, refractive\_index) \\
+gr.material(kd, ks, shininess, reflectiveness, refractive\_index, transparency) \\
+gr.material(kd, ks, shininess, reflectiveness, refractive\_index, transparency, bumpness) \\\\
+- New {\bf gr.textmaterial} command has been added and has following constructors: \\
+gr.textmaterial('png-file', ks) \\
+gr.textmaterial('png-file', ks, shininess) \\
+gr.textmaterial('png-file', ks, shininess, reflectiveness) \\
+gr.textmaterial('png-file', ks, shininess, reflectiveness, refractive\_index) \\
+gr.textmaterial('png-file', ks, shininess, reflectiveness, refractive\_index, transparency) \\
+gr.textmaterial('png-file', ks, shininess, reflectiveness, refractive\_index, transparency, bumpness) \\\\
+- {\bf gr.arealight} command has been added to support area lights as follows:\\
+gr.arealight(light\_pos, light\_colour, attenuation, width, height) where width and height defines the width and height of area light.\\\\
+- {\bf gr.dof} command supports Depth of Field:\\
+gr.dof(focal\_length, aperture) and gr.render has been extended to accept this node accordingly at the end\\\\
+- {\bf gr.joint} command supports CSG nodes:\\
+gr.joint(name, op) where op is one of 0=UNION, 1=INTERSECTION or 2=DIFFERENCE and arbitrary number of nodes are added as children of this node\\\\
+
+\end{description}
+\end{document}
