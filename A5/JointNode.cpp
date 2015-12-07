@@ -82,11 +82,11 @@ TAO* JointNode::join(TAO *B, TAO* C) {
 			}
 
 			if (B->taomin < C->taomin) mintao = B;
-			else if (C->taomax < B->taomax) mintao = new TAO(C->taomax, C->taomax, C->nmax, C->nmax, C->materialmin, C->materialmax);
+			else if (C->taomax < B->taomax) mintao = new TAO(C->taomax, C->taomax, -C->nmax, -C->nmax, C->materialmin, C->materialmax);
 			else mintao = NULL;
 
 			if (B->taomax > C->taomax) maxtao = B;
-			else if (B->taomin < C->taomin) maxtao = new TAO(C->taomin, C->taomin, C->nmin, C->nmin, C->materialmin, C->materialmax);
+			else if (B->taomin < C->taomin) maxtao = new TAO(C->taomin, C->taomin, -C->nmin, -C->nmin, C->materialmin, C->materialmax);
 			else maxtao = NULL;
 
 			break;

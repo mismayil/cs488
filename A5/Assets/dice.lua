@@ -9,14 +9,13 @@ scene:add_child(dice)
 dice:translate(-15, -15, 0)
 --dice:scale(0.5, 0.5, 0.5)
 
-CUBE_SIZE = 10
+CUBE_SIZE = 20
 
 cube = gr.cube('cube')
 cube:set_material(black)
 cube:scale(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE)
 
 joint = gr.joint('joint', 2)
-dice:add_child(joint)
 joint:add_child(cube)
 
 ones = {}
@@ -75,6 +74,17 @@ end
 for i = 1, num_ones do
 	joint:add_child(ones[i])
 end
+
+isphere = gr.sphere('isphere')
+isphere:set_material(black)
+isphere:scale(CUBE_SIZE / 2 + 4, CUBE_SIZE / 2 + 4, CUBE_SIZE / 2 + 4)
+isphere:translate(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2)
+
+jointA = gr.joint('jointA', 1)
+jointA:add_child(joint)
+jointA:add_child(isphere)
+
+dice:add_child(jointA)
 
 dice:rotate('x', 45)
 dice:rotate('y', 180)

@@ -1,28 +1,27 @@
 -- Final Scene : Ray traced Backgammon
 
 -- materials
-board_mat = gr.textmaterial('Assets/backgammon.png', {0.3, 0.3, 0.3}, 20)
-wood_mat = gr.textmaterial('Assets/wood.png', {0.3, 0.3, 0.3}, 20)
+board_mat = gr.textmaterial('Assets/backgammon.png', {0.3, 0.3, 0.3}, 20, 0.5)
+wood_mat = gr.textmaterial('Assets/wood.png', {0.3, 0.3, 0.3}, 20, 0.5)
 black_piece_mat = gr.material({0.1, 0.49, 0.39}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1.2)
 white_piece_mat = gr.material({0.96, 0.94, 0.9}, {0.5, 0.3, 0.5}, 10, 0, 1, 0, 1.2)
-white = gr.material({0.9, 0.9, 0.9}, {1.0, 1.0, 1.0}, 25)
-black = gr.material({0.1, 0.1, 0.1}, {0.5, 0.5, 0.5}, 25, 0.5)
-mirror_mat = gr.material({0.0, 0.0, 0.0}, {0.3, 0.3, 0.3}, 10, 1.0)
+white = gr.material({0.9, 0.9, 0.9}, {1.0, 1.0, 1.0}, 25, 0.5, 1.33, 0.3)
+black = gr.material({0.1, 0.1, 0.1}, {0.5, 0.5, 0.5}, 25, 0.3)
+mirror_mat = gr.material({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 5, 1.0)
 meeting = gr.textmaterial('Assets/meeting.png', {0.3, 0.3, 0.3}, 20)
-tmat2 = gr.textmaterial('Assets/checkerboard.png', {0.5, 0.4, 0.8}, 25)
+tram = gr.textmaterial('Assets/tram.png', {0.3, 0.3, 0.3}, 10)
 
 -- create a dice
 function create_dice()
 	dice = gr.node('dice')
 
-	CUBE_SIZE = 10
+	CUBE_SIZE = 30
 
 	cube = gr.cube('cube')
-	cube:set_material(black)
+	cube:set_material(white)
 	cube:scale(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE)
 
 	joint = gr.joint('joint', 2)
-	dice:add_child(joint)
 	joint:add_child(cube)
 
 	ones = {}
@@ -30,7 +29,8 @@ function create_dice()
 
 	for i = 1, num_ones do
 		one = gr.sphere('one' .. tostring(i))
-		one:set_material(white)
+		one:set_material(black)
+		one:scale(2, 2, 2)
 		ones[i] = one
 	end
 
@@ -82,6 +82,17 @@ function create_dice()
 		joint:add_child(ones[i])
 	end
 
+	isphere = gr.sphere('isphere')
+	isphere:set_material(white)
+	isphere:scale(CUBE_SIZE / 2 + 4, CUBE_SIZE / 2 + 4, CUBE_SIZE / 2 + 4)
+	isphere:translate(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2)
+
+	jointA = gr.joint('jointA', 1)
+	jointA:add_child(joint)
+	jointA:add_child(isphere)
+
+	dice:add_child(jointA)
+
 	return dice
 end
 
@@ -115,11 +126,11 @@ backside:set_material(wood_mat)
 backside:scale(100, 5, 0.1)
 backside:translate(-25, -25, 0)
 
-mirror = gr.cube('mirror')
-backgammon:add_child(mirror)
-mirror:set_material(mirror_mat)
-mirror:scale(200, 100, 0.1)
-mirror:translate(-75, -25, -5)
+background = gr.cube('background')
+scene:add_child(background)
+background:set_material(tram)
+background:scale(200, 100, 0.1)
+background:translate(-80, -60, 0)
 
 black_pieces = {}
 num_black_pieces = 6
@@ -152,12 +163,13 @@ dices[0] = create_dice()
 dices[1] = create_dice()
 dices[0]:scale(0.1, 0.1, 0.1)
 dices[1]:scale(0.1, 0.1, 0.1)
-dices[0]:translate(0, -25, 60)
-dices[1]:translate(-5, -25, 50)
-dices[0]:rotate('y', 90)
-dices[1]:rotate('x', 90)
+dices[0]:translate(5, -25, 60)
+dices[1]:translate(-5, -25, 70)
+dices[0]:rotate('y', 270)
+dices[1]:rotate('y', 135)
 backgammon:add_child(dices[0])
 backgammon:add_child(dices[1])
+
 
 area_light = gr.arealight({-10, 50, -100}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
 white_light = gr.light({10, 40, -80.0}, {0.9, 0.9, 0.9}, {1, 0, 0})

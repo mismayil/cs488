@@ -29,8 +29,15 @@ dices[0] = create_dice()
 dices[1] = create_dice()
 dices[0]:scale(0.1, 0.1, 0.1)
 dices[1]:scale(0.1, 0.1, 0.1)
-dices[0]:translate(0, -25, 60)
-dices[1]:translate(5, -25, 70)
-dices[0]:rotate('y', 90)
+dices[0]:translate(5, -27, 60)
+dices[1]:translate(-5, -27, 70)
+dices[0]:rotate('y', 270)
+dices[1]:rotate('y', 135)
 backgammon:add_child(dices[0])
 backgammon:add_child(dices[1])
+
+white = gr.material({0.9, 0.9, 0.9}, {1.0, 1.0, 1.0}, 25, 0.5, 1.33, 0.3)
+black = gr.material({0.1, 0.1, 0.1}, {0.5, 0.5, 0.5}, 25, 0.3)
+gr.render(scene, 'images/backgammon.png', 512, 512,
+	  {0, -20, -15}, {0, 0, -1}, {0, 1, 0}, 50,
+	  {0.3, 0.3, 0.3}, {white_light})

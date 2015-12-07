@@ -1,5 +1,5 @@
 white = gr.material({0.9, 0.9, 0.9}, {1.0, 1.0, 1.0}, 25)
-black = gr.material({0.1, 0.1, 0.1}, {0.5, 0.5, 0.5}, 25, 0.5, 1, 0, 1.2)
+black = gr.material({0.1, 0.1, 0.1}, {0.5, 0.5, 0.5}, 25)
 
 scene = gr.node('root')
 scene:translate(0, 0, -100)
@@ -14,28 +14,28 @@ cube = gr.cube('cube')
 cube:set_material(white)
 cube:scale(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE)
 
-cornersphere = gr.sphere('cornersphere')
-cornersphere:set_material(white)
-cornersphere:scale(2, 2, 2)
-cornersphere:translate(2, CUBE_SIZE - 2, 2)
+isphere = gr.sphere('isphere')
+isphere:set_material(white)
+isphere:scale(CUBE_SIZE / 2 + 4, CUBE_SIZE / 2 + 4, CUBE_SIZE / 2 + 4)
+isphere:translate(CUBE_SIZE / 2, CUBE_SIZE / 2, CUBE_SIZE / 2)
 
-cornerbox = gr.cube('cornerbox')
-cornerbox:set_material(white)
-cornerbox:scale(2, 2, 2)
-cornerbox:translate(-1, CUBE_SIZE - 1, -1)
+ccube = gr.cube('ccube')
+ccube:set_material(white)
+ccube:scale(4, 4, 4)
+ccube:translate(0, CUBE_SIZE-3, 0)
 
-jointA = gr.joint('jointA', 2)
-jointA:add_child(cornerbox)
-jointA:add_child(cornersphere)
+jointA = gr.joint('jointA', 1)
+jointA:add_child(cube)
+jointA:add_child(isphere)
 
 jointB = gr.joint('jointB', 2)
 jointB:add_child(cube)
 jointB:add_child(jointA)
 
-dice:add_child(jointB)
+dice:add_child(jointA)
 --dice:add_child(cube)
 
-dice:rotate('y', 90)
+dice:rotate('y', 100)
 --dice:rotate('x', -45)
 
 area_light = gr.arealight({0, 50, -50}, {0.9, 0.9, 0.9}, {1, 0, 0}, 20, 20)
