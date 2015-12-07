@@ -146,6 +146,7 @@ TAO* SceneNode::intersect(Ray ray) {
         TAO *tao = child->intersect(ray);
         if (tao && (!mintao || (tao->taomin < mintao->taomin))) mintao = tao;
         if (tao && (!maxtao || (tao->taomax > maxtao->taomax))) maxtao = tao;
+        if (mintao != tao && maxtao != tao) delete tao;
     }
 
     if (mintao) {
