@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<!-- saved from url=(0059)https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/a4.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>CS 488/688: Introduction to Computer Graphics</title>
+
+    <!-- Bootstrap -->
+    <link href="./a4_files/bootstrap.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+	 <!-- Custom styles for this template -->
+    <link href="./a4_files/carousel.css" rel="stylesheet">
+
+	<style>
+		/* Customize container */
+		@media (min-width: 768px) {
+			.container {
+				max-width: 730px;
+			}
+		}
+		.container-narrow > hr {
+			margin: 30px 0px;
+		}
+
+		dd {
+			padding-bottom: 10px;
+			padding-left: 10px;
+		}
+
+		dl {
+			padding-bottom: 0px;
+		}
+	</style>
+  <style type="text/css"></style></head>
+  <body role="document">
+	<div class="container" role="main">
+	<center>
+    <h2>CS 488/688: Introduction to Computer Graphics</h2>
+	<h4>Fall 2015 Assignment 4: Trace</h4>
+	<hr>
+	</center>
+
+	<div class="alert alert-warning" role="alert">
+		<b>Due: Monday, November 9th, 11:59pm</b>
+	</div>
+
+	<h3>Summary</h3>
+
+<p>
+The goal of this assignment is to write a simple, mostly non-recursive
+ray tracer that can do (at least) the following:
+</p>
+
+<ol>
+<li>Cast primary rays from the eye position through every pixel in 
+	an image plane;</li>
+<li>Intersect primary rays with scene geometry;</li>
+<li>Cast shadow rays from intersection points to each light source; and</li>
+<li>Use the gathered information to perform illumination calculations and
+	choose a colour for the pixels associated with the primary rays.</li>
+</ol>
+
+<p>
+For geometric primitives you must support spheres, cubes and triangle
+meshes.  Those primitives can be assembled into a modelling hierarchy,
+meaning that your ray-object intersection code must be able to traverse 
+that hierarchy recursively.  You must support a standard Phong illumination
+model (remember that this is different from Phong shading of mesh surfaces),
+lit by point light sources and a global ambient light.  You must support
+ray tracing acceleration via hierarchical bounding volumes (which can be
+spheres, boxes, or some other, fancier data structure), and be capable of
+demonstrating the resulting improvement in performance.  Finally, you must
+implement one additional feature of your own choosing, and create a novel
+scene and rendered image that demonstrate that feature.
+</p>
+
+<p>
+A few additional notes on these features:
+</p>
+
+<ul>
+<li>
+	The ray tracer does not need to have a graphical user interface.
+	It can read the input script, produce an output image, and stop.
+</li>
+
+<li>You should use face normals to shade cubes and triangle meshes. 
+	In particular,
+	you do not need to support vertex normals, and you do not need to 
+	implement Phong shading (i.e., interpolation of normals across faces).
+	By default, your meshes will look faceted.  You can implement Phong
+	shading as your extra feature, as long as you maintain backwards
+	compatibility with the provided test scripts.  (In that case, you 
+	should consider implementing a second mesh type, with a new Lua
+	command, that can store vertex normals and use them during shading.)
+</li>
+
+<li>You are required to implement only primary and shadow rays.  You are
+	<em>not</em> required to implement recursive reflection or refraction
+	rays, though of course these can form part of your additional feature.
+	(Reminder: Phong attenuation applies to shadow rays only, not primary
+	rays.)
+</li>
+
+<li>When a primary ray doesn't hit any scene object, you should assign it
+	a background colour.  You must implement an interesting background that
+	does not interfere with the objects in the scene.  The background
+	should not be too bright, or the patterns too busy (a sunset might
+	be a reasonable background, for example...).  A constant-coloured
+	background is not acceptable.  You can parameterize the background by 
+	either pixel position or ray direction. Ray direction could be used to
+	create a sky background with dark blue at the zenith, white at the
+	horizon, and brown below the horizon, or a starfield for an outer space
+	scene. Use your imagination.  All your raytraced images should have a
+	background.
+</li>
+
+<li>Remember that you're not implementing the forward graphics pipeline.
+	You can write an entire ray tracer without ever constructing our familiar
+	<var>V</var> and <var>P</var> matrices.  Instead, construct
+	primary rays directly in world coordinates. Then, in a recursive
+	tree traversal, you'll end up re-expressing primary rays in 
+	local modelling coordinate systems in order to perform object
+	intersection.  When you find an intersection, you'll have to transform
+	the information about (location, normal vector) back into world 
+	coordinates on the way back to the root of the tree.  To some extent
+	you could flatten the tree, baking the hierarchy of transformations
+	down into the primitives or a single level of transformation above them;
+	note that this can't count as an extra objective.
+</li>
+
+<li>You should place your test scene in a file called <code>sample.lua</code>
+	in the <code>A4</code> directory.  The test scene should contain at
+	least one of each required primitive type, at least one point light
+	source, at least one shiny surface (with obvious specular reflection),
+	a non-trivial background (see below) and at least one demonstration of 
+	your additional feature.  The script should produce a rendered image
+	in <code>sample.png</code> and exit.
+</li>
+
+</ul>
+
+<h3>Modelling</h3>
+
+<p>
+As with Assignment 3, input scenes are
+described using a simple modelling language built on top of a Lua
+interpreter.  The following function behaves similarly to Assignment 3,
+but isn't quite identical:
+</p>
+<ul>
+<li><code>gr.mesh( name, objfilepath )</code>: Load a mesh from an external
+	OBJ file.  Returns a reference to a newly created <code>GeometryNode</code>
+	that points to the mesh.  Internally, meshes are cached so that 
+	multiple invocations of <code>gr.mesh()</code> with the same file
+	name will share the same underlying <code>Mesh</code> instance.
+</li>
+</ul>
+<p>
+Assignment 4 also includes the following new functions:
+</p>
+<ul>
+<li><code>gr.nh_box( name, {x,y,z}, r )</code>: Create a non-hierarchical
+	box of the given name.  The box should be aligned with the axes of its 
+	Model coordinates, with one corner at (<var>x</var>, <var>y</var>, <var>z</var>) 
+	and the diagonally opposite corner at (<var>x</var> + <var>r</var>, <var>y</var> + <var>r</var>, <var>z</var> + <var>r</var>).
+</li>
+<li><code>gr.nh_sphere( name, {x,y,z}, r )</code>: Create a non-hierarchical
+	sphere of the given name, with centre 
+	(<var>x</var>, <var>y</var>, <var>z</var>)  and radius <var>r</var>.
+</li>
+<li><code>gr.cube( name )</code>: Create an axis-aligned cube with
+	one corner at (0,0,0) and the other at (1,1,1).  (It's expected that
+	this cube would be placed under transformations in a tree.)
+</li>
+<li><code>gr.sphere( name )</code>: Create a sphere with centre (0,0,0)
+	and radius 1.
+</li>
+<li><code>gr.light( {x,y,z}, {r,g,b}, {c0,c1,c2} )</code>: Create a 
+	point light source located at
+	(<var>x</var>, <var>y</var>, <var>z</var>) with intensity
+	(<var>r</var>, <var>g</var>, <var>b</var>) and quadratic attenuation
+	parameters <var>c<sub>0</sub></var>, <var>c<sub>1</sub></var> and
+	<var>c<sub>2</sub></var>).
+</li>
+<li><code>gr.render( node, filename, w, h, eye, view, up, fov, ambient, lights )</code>:
+	Raytrace an image of size <var>w</var>×<var>h</var> and store the
+	image in a PNG file with the given filename.
+	The parameters <var>eye</var>, <var>view</var>, <var>up</var> and
+	<var>fov</var> control the camera.  The last two parameters are
+	the global ambient lighting and a list of point light sources in the
+	scene.
+</li>
+</ul>
+<p>
+The functions <code>gr.nh_box</code> and <code>gr.nh_sphere</code> allow
+you to implement a non-hierarchical version of the ray tracer, since you can
+place spheres and boxes in arbitrary locations in world coordinates. Thus you
+will be able to test aspects of your code such as shading and shadows without
+necessarily having hierarchical transformations working. We provide
+a few non-hierarchical test scenes to facilitate this process.  Later you
+may find it easier to build scenes using <code>gr.sphere</code>, 
+<code>gr.cube</code>, and hierarchical transformations.
+</p>
+
+<h3>Tips and cautions</h3>
+
+<p>
+You are free to develop your code as you like. However, you will
+probably find it easiest if you first write a non-hierarchical
+ray tracer (Objectives 1–6). Once you have that part of the code
+debugged, add the hierarchical part (Objectives 8 and 9, affine
+transformations, a general hierarchy, and bounding volumes for
+meshes). Depending on what you implement for your extra
+feature, you may or may not want to complete Objective 10 before
+starting on hierarchical transformations.  Finally, you need to
+create a unique scene (Objective 7). While you can write the unique
+scene earlier in the development cycle, you may want to wait until
+you know if you will finish hierarchical models, since the power
+of hierarchical modelling will let you build a more interesting
+scene.
+</p>
+<p>
+For this assignment, you are allowed to produce some console output.
+For instance, you may want to output your render parameters and
+have some indication of how much progress your ray tracer is making
+(i.e., 10%, 20% done etc). Printing out your entire hierarchy tree
+is probably too much output, though.
+</p>
+<p>
+For debugging purposes, it can be useful to have a way to trace a 
+single primary ray.  That way, if you know that a particular part of
+your scene is producing incorrect output you can follow your program's
+execution at a single pixel and examine its behaviour in detail.
+Another approach is to render a scene in false colours that provide
+some insight into the behaviour of the program at every pixel.
+You might even consider embedding the ray tracer in an interactive
+UI like that of A3, where you can compare an OpenGL rendering of 
+your scene with the corresponding raytraced image (but this could require
+a lot of extra effort).
+</p>
+<p>
+Be aware of numerical issues that arise in any ray tracing algorithm.
+In particular, consider the following tips from past students:
+</p>
+<ul>
+	<li>
+	Try to minimise the number of times that you normalize vectors and 
+	normals. Each time you normalize, you introduce a small amount of error
+	that can cause major problems.
+	</li>
+	<li>
+	The intersection of a ray and an object may end up slightly inside the 
+	object due to limited numerical precision.  In such a case, any 
+	secondary rays cast from the intersection location will hit the
+	same object before anything out in the rest of the world.
+	To avoid this problem, discard all intersections that occur too close
+	to the ray origin.
+	</li>
+	<li>
+	Use "epsilon" checks in your intersection routines, particularly the 
+	ray-intersect-triangle routine.
+	</li>
+</ul>
+<p>
+In hierarchical ray tracing, on "the way down" you should transform
+the point and vector forming the ray with a node's <em>inverse</em>
+transform.  On "the way back up" you should transform the intersection 
+point by the original transformation, and (assuming you represent the
+normal as a column vector) you should transform the normal with the 
+transpose of the upper-3×3 part of the inverse transform.
+</p>
+
+<h3>Extensions</h3>
+
+<p>
+You are required to implement an additional non-trivial feature.
+There are many possibilities, such as an efficiency improvement or
+an addition of functionality. Several ideas are given below.  They
+are purely a list of suggestions for your consideration, and not
+intended to be exhaustive; a list of
+papers on ray tracing is given in the 
+<a href="https://www.student.cs.uwaterloo.ca/~cs488/r.pdf">course
+bibliography</a>. These
+papers contain a lot more possibilities (some of them might even
+include code.)  A good overall reference for possible extensions 
+is the book <em>Physically Based Rendering</em> by Pharr and
+Humphreys.
+</p>
+
+<h4>New features</h4>
+
+<ul>
+<li> 
+<p>
+<b>Mirror reflections</b>: This involves (recursively) issuing secondary
+	reflection rays from the point of intersection. This would apply to
+	objects that have been assigned a material with a non-zero
+	"reflectivity" (which is best kept distinct from a material's
+	specular colour).
+</p>
+<p>
+	Since purely reflective objects are rare, blend the colour accumulated
+	along the reflected ray with the colour produced by local illumination,
+	using the reflectivity as a coefficient.  Note
+	that you will need to specify a means of halting recursion.
+</p>
+</li>
+<li>
+<p>
+<b>Refraction</b>: This involves (recursively) issuing secondary refracted 
+	rays for objects that have a transparency coefficient and an index of 
+	refraction. Implementation is very similar to reflection rays. Use
+	Snell's law to compute the direction of the refracted ray. [Whitted]
+</p>
+<p>
+Aside: if you want to get fancy, the ratio between reflection and
+refraction is given by a function that produces more reflection at
+glancing angles. This is called the <em>Fresnel effect</em> and is a
+consequence
+of Maxwell’s Laws; see the text or the references. For the purposes
+of this assignment, you can use constant coefficients for the amount
+of reflection and refraction.  However, watch out for total internal
+reflection.
+</p>
+</li>
+<li>
+<p>
+<b>Supersampling</b>: This involves generating multiple rays for each
+pixel and using some averaging function to combine the colours returned
+(e.g., sample on a 3×3 grid over the area of the pixel and average
+the nine colour values that are returned). This helps to reduce the
+"jaggies" and is the most basic form of <b>antialiasing</b>.
+</p>
+</li>
+<li>
+<p>
+<b>Other antialiasing methods</b>: Generate more rays only where the scene
+changes (adaptive sampling), use random (stochastic) sampling techniques 
+(jitter the sample positions in the subpixel grid), etc. There are many,
+many antialiasing techniques. [Cook : Stochastic] [Dippe :
+Stochastic] [Lee Uselton] [Mitchell] 
+[Painter : Adaptive-Progressive Refinement]
+</p>
+<p>
+Note: If you choose to implement a supersampling objective, make
+sure you include at least two comparison images of the same scene,
+one with supersampling turned on and the other without.
+</p>
+</li>
+<li>
+<p>
+<b>Fisheye/Omnimax Projection</b>: Ray trace a 180 degree view, using a
+hemispherical "screen".
+</p>
+</li>
+<li>
+<p>
+<b>Spherical Lens Systems</b>: Simulate a real lens system; use stochastic 
+sampling across the aperture to simulate depth of field, and refractive 
+intersection with sphere surfaces to create a lens system. (Even one lens 
+is interesting; more would make a good project).
+</p>
+</li>
+<li>
+<p>
+<b>Additional primitives</b>: Extend the modelling language and add 
+primitives for (truncated) cylinders and cones. Note that these
+primitives are basically particular quadrics intersected with a
+pair of halfspaces, and (truncated) paraboloids and hyperbolids are
+in the same category.  Quadric-based primitives are very easy to
+implement, especially since you have already been provided with a
+stable quadratic solver.
+</p>
+<p>
+There are other possible primitive objects, such as superquadrics
+or tori, although these are harder than quadric-based solvers. For
+instance, a torus is generated by a quartic equation, which can be
+solved analytically, but it’s hard to write a numerically stable
+quartic solver.  Some kind of numerical root-solver is often required;
+regula falsi is recommended, but isolate the roots first using a
+geometric approach.  You might also try recent 3D fractal primitives
+like the <a href="https://en.wikipedia.org/wiki/Mandelbulb">Mandelbulb</a>, 
+using some kind of ray marching approach to converge on the fractal
+surface.
+</p>
+</li>
+<li>
+<p>
+<b>Texture mapping</b>: Determine the diffuse reflectance of objects based
+on stochastic or deterministic functions. This requires a function that
+computes, for each intersection point on the surface of a primitive, a
+set of texture coordinates. For instance, for a sphere, you can use the
+elevation and azimuth of the intersection point to index the texture image.
+Alternatively, you can use a projective transformation of the modelling
+coordinates of the intersection point. Computing the diffuse reflectance
+procedurally as a function of the spatial position
+(<var>x</var>, <var>y</var>, <var>z</var>) in modelling coordinates can
+be used to generate solid textures like wood grain or marble [Perlin,Hart].
+</p>
+<p>
+See <a href="http://textures.guinet.com/">textures.guinet.com</a>
+for some sample textures.
+</p>
+</li>
+<li>
+<p>
+<b>Bump mapping</b>: Similar to texture mapping, but modulate an object's
+	surface normal instead of its diffuse colour [Blinn].
+</p>
+</li>
+<li>
+<p>
+<b>Lighting Models</b>: Implement a decent "physical" lighting model, or
+some other alternative lighting model (like the Blinn-Phong model).
+Implement Phong shading (interpolation of vertex normals).
+</p>
+</li>
+<li>
+<p>
+<b>Constructive Solid Geometry (CSG)</b>: Extend the ray tracer to provide
+CSG operations at model nodes (intersect, union, diff, etc.) and extend the 
+intersection routines to return 1D intersection intervals along the ray
+rather than a single intersection distance.  Then perform suitable merges
+of lists of intersection intervals at internal CSG nodes.
+These computations can be performed using a simple count-up-at-entry and
+count-down-at-exit algorithm. Once the final set of intervals
+has been computed, take the first point of the first interval as the intersection point.
+</p>
+</li>
+</ul>
+
+<h4>Improved efficiency</h4>
+
+<p>
+The key to improving efficiency is the avoidance of unnecessary
+work, or rather, only applying work were it will make a difference.
+Some ideas for improving efficiency are:
+</p>
+
+<ul>
+<li>
+<p>
+<b>Intensity thresholds</b>: Check if the accumulated product of mirror
+	reflectances is less than some epsilon, then return black without 
+	checking for further ray hits (obviously goes along with generating
+	secondary rays for mirror reflection).
+</p>
+</li><li>
+<p>
+<b>Spatial partitioning</b>: Modify your intersection routine to use a
+	space partitioning scheme; e.g., BSP trees, uniform spatial subdivision, 
+	or octrees. Uniform spatial subdivision is particularly easy to implement
+	and performs well in practice; a hierarchical version can be used as an
+	extension of this in a ray-tracing project.
+</p>
+<p>Note: simply flattening the scene graph and caching transformation 
+matrices, as suggested earlier, is not enough to get you credit for this 
+objective.
+</p>
+</li>
+</ul>
+
+<p>
+If you choose to implement some kind of optimization for your extra
+feature, you must offer an effective demonstration that it actually
+works.  If the improvement can not be demonstrated visually, you might
+note differences in timing in your <code>README</code>, for example.
+</p>
+<p>
+There's no harm in implementing multiple extensions in the scope of
+this assignment.  We'll give you the credit for whichever one you
+want to associate "officially" with this assignment.  If you plan to
+extend your ray tracer for the project, you'll still be able to 
+count all those additional extensions as objectives later.
+</p>
+
+<h3>Provided files</h3>
+
+<p>
+Please download the file <a href="https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/cs488-a4-full.zip">cs488-a4-full.zip</a>
+and unzip it from within your top-level cs488 folder.  This batch of
+files will make a few final changes to the <code>shared/</code> directory,
+so you'll want to re-do the <code>premake4 gmake; make</code> sequence 
+in the top-level directory.  For Mac users, it will also offer a new XCode
+project that allows you to build A4.
+(This zip file supersedes the earlier 
+<a href="https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/cs488-a4.zip">cs488-a4.zip</a>.  But if you already started
+working with that zip file, you are absolutely welcome to continue using
+it without downloading the new version; we can mark your assignment
+either way.)
+As usual, you should be able to use <code>premake4 gmake; make</code>
+in <code>A4/</code>
+to build the skeleton code.  When run, the skeleton program ignores
+the scene graph read in from the Lua script and produces a fixed
+background as a demonstration of writing colours to pixels.
+</p>
+<p>
+A number of sample scripts are provided in the <code>Assets</code>
+directory.  The <code>.lua</code> files are the scene files themselves,
+which you pass as command-line arguments to the
+<code>A4</code> executable; the <code>.obj</code> files are meshes
+that are loaded by the scene files.  Most of these scripts will work
+only when invoked from within the <code>Assets</code> directory, since
+they load OBJ files in the same directory.  For some of the test
+scenes, we provide sample renderings in the 
+<a href="https://www.student.cs.uwaterloo.ca/~cs488/testscenes.html">course
+gallery</a>.
+</p>
+<p>
+Note the files <code>polyroots.hpp</code> and <code>polyroots.cpp</code>,
+which provide stable and robust solvers for quadratic, cubic and 
+quartic polynomials.  We recommend you use these solvers to handle
+intersections with most algebraic surfaces.
+</p>
+
+<h3>Deliverables</h3>
+
+<p>
+Prepare and upload a ZIP file of the <code>A4/</code>
+directory, omitting unnecessary
+files (executables, build files, etc.).  Make sure to include at
+least the following files:
+</p>
+<ul>
+<li><b>A <code>README</code> file</b>, as usual.
+Your <code>README</code> needs to contain a description of your extra 
+feature and of your unique scene(s). If you implement an acceleration 
+feature, provide a switch to turn it on and off (this can be a compile-time 
+switch, in which case you should provide two executables) and provide
+comparative timings. If you use external models, please credit where
+you got them from.  
+</li>
+<li><p><b>A screenshot</b>, in the file <code>screenshot.png</code>.
+	For this assignment, the screenshot should not be of the running
+	program, but your best rendered image.
+</p></li>
+<li><p><b>A sample script</b>.  In the <code>A4/</code> directory, include a
+	test script called <code>sample.lua</code> for your unique scene,
+	and the rendered image <code>sample.png</code> that it produces
+	when run.  Ideally, this script should demonstrate your extra
+	feature.  This image should have a resolution
+	of at least 500×500. You may submit additional images if you
+	wish; mention them in your README.
+</p></li>
+<li><p><b>Additional sample images</b>.  In the <code>Assets/</code>
+	directory, include renderings of <em>at least</em>
+	the files <code>nonhier.lua</code>,
+	<code>macho-cows.lua</code> and <code>simple-cows.lua</code>.
+	The images should be in PNG format and stored in
+	<code>nonhier.png</code>, <code>macho-cows.png</code> and
+	<code>simple-cows.png</code>. 
+	The scripts <code>macho-cows.lua</code> and <code>simple-cows.lua</code>
+	will fully test all the features of your raytracer except your
+	additional feature. If you do not complete the entire assignment, 
+	of course, you will not be able to render all three scenes.
+	</p>
+	<p>
+	In addition, to demonstrate that you've implemented bounding volumes, 
+	you should make a <em>special renderering</em> of either 
+	<code>nonhier.lua</code> or <code>macho-cows.lua</code> in which you 
+	draw the bounding volumes instead of the meshes. This image should be
+	stored in <code>nonhier-bb.png</code> or <code>macho-cows-bb.png</code>.
+	</p>
+</li>
+</ul>
+<p>
+There will be a bit of subjective grading of your raytraced images.
+If the image is extremely good, we may award extra credit. 
+If the image is extremely simple, but tests all features, the TA may
+subtract up to one half a mark. If the image does not test all features,
+more marks may be deducted, since the TAs will not be able to verify
+all the features.
+</p>
+<p>
+If you can not get hierarchical transformations working, submit an 
+image made without them, and mention that you are missing hierarchical
+transformations in your <code>README</code>. You will be severely
+penalized if we discover that you misrepresented yourself, of course.
+</p>
+
+<h3>Objective list</h3>
+
+	<p>
+	Every assignment includes a list of objectives.  Your mark in the
+	assignment will be based primarily on the achievement of these objectives,
+	with possible deductions outside the list if necessary.
+	</p>
+
+	<div class="panel panel-default">
+	  <div class="panel-heading">
+		<h3 class="panel-title">Assignment 4 objectives</h3>
+	  </div>
+	  <ul class="list-group">
+	  	<li class="list-group-item">
+			▢ 
+			Objects are visible in rendered images.  This implies that you
+			can generate primary rays, intersect them with spheres, and
+			generate PNG output.
+		</li>
+	  	<li class="list-group-item">
+			▢ 
+			Cubes and triangle meshes are properly rendered.
+		</li>
+	  	<li class="list-group-item">
+			▢ 
+			Hidden surfaces are not visible: objects are correctly 
+			ordered from back to front.
+		</li>
+	  	<li class="list-group-item">
+			▢ 
+			There is a function that generates a non-trivial background
+			for the scene without obscuring the view of any objects
+			in the scene.  The background appears in all generated images.
+		</li>
+	  	<li class="list-group-item">
+			▢ 
+			A Phong illumination model is implemented, including
+			diffuse, specular, and ambient illumination.
+		</li>
+	  	<li class="list-group-item">
+			▢ 
+			Objects are able to cast shadows on other objects.
+		</li>
+	  	<li class="list-group-item">
+			▢
+			A script has been supplied that defines and renders a 
+			novel scene.
+		</li>
+	  	<li class="list-group-item">
+			▢ 
+			Hierarchical transformations perform correctly.  Spheres and
+			cubes can be transformed via arbitrary affine transformations.
+		</li>
+	  	<li class="list-group-item">
+			▢
+			Bounding volumes (spheres or boxes) have been implemented for
+			mesh objects, as demonstrated by a special rendering as
+			described in the assignment text.
+		</li>
+	  	<li class="list-group-item">
+			▢ 
+			The assignment includes an extra feature or improvement beyond
+			the core capabilities defined in the assignment text.
+		</li>
+	  </ul>
+	</div>
+
+	</div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="./a4_files/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="./a4_files/bootstrap.min.js"></script>
+  
+
+</body></html>

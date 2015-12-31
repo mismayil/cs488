@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<!-- saved from url=(0059)https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/a0.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>CS 488/688: Introduction to Computer Graphics</title>
+
+    <!-- Bootstrap -->
+    <link href="./CS 488_688_ Introduction to Computer Graphics_files/bootstrap.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+	 <!-- Custom styles for this template -->
+    <link href="./CS 488_688_ Introduction to Computer Graphics_files/carousel.css" rel="stylesheet">
+
+	<style>
+		/* Customize container */
+		@media (min-width: 768px) {
+			.container {
+				max-width: 730px;
+			}
+		}
+		.container-narrow > hr {
+			margin: 30px 0px;
+		}
+
+		dd {
+			padding-bottom: 10px;
+			padding-left: 10px;
+		}
+
+		dl {
+			padding-bottom: 0px;
+		}
+	</style>
+  <style type="text/css"></style></head>
+  <body role="document">
+	<div class="container" role="main">
+	<center>
+    <h2>CS 488/688: Introduction to Computer Graphics</h2>
+	<h4>Fall 2015 Assignment 0: Warmup</h4>
+	<hr>
+	</center>
+
+	<div class="alert alert-warning" role="alert">
+		<b>Due: Monday, September 21st, 11:59pm</b>
+	</div>
+
+	<h3>Summary</h3>
+
+	<p>
+	The goal of this assignment is to get you accustomed to the
+	websites, tools and technology that we will use throughout
+	the term.  There will be a small amount of coding, but you will
+	not need to write any OpenGL code yourself—those parts of
+	the assignment will be provided for you.
+	</p>
+	<p>
+	This assignment is <em>optional</em>.  If you do not hand it in, you
+	will not lose marks. If you do hand it in, it will be marked
+	in the normal way, but the mark will not count towards your final
+	grade.  The problem is that it's all too easy to lose marks on 
+	future assignments for silly reasons that have nothing to do with
+	understanding the material (such as misunderstanding the submission
+	instructions, or failing to include appropriate documentation).
+	Completing Assignment 0 will help you avoid making any such mistakes
+	when it counts.  You'll also get some direct experience with the
+	kind of code you'll be writing throughout the term.
+	</p>
+	<p>
+	This term we're changing the libraries we're using, as well as the
+	build process.  It's possible (indeed, likely) that we've introduced
+	problems that will affect your ability to complete future assignments.
+	So there's another important reason for you to complete Assignment 0:
+	your feedback will help us iron out these problems, so that future
+	assignments will go more smoothly for <em>all</em> of us.
+	</p>
+	<p>
+	The directions in this assignment are more
+	explicit than in the remaining assignments.  In the future,
+	the steps to follow will not be written as explicitly.
+	</p>
+
+	<h3>Step 1: Piazza</h3>
+
+	<p>
+	In order to ask questions, help your fellow students, and keep up
+	with timely announcements, you will need to enrol in the Piazza
+	site for this course.  Please use the 
+	<a href="http://piazza.com/uwaterloo.ca/fall2015/cs488">sign up</a>
+	link to enrol.  You are not required to use your uwaterloo.ca address,
+	but we'll want to know who you are.  <b>On LEARN, submit a text file
+	called <code>piazza.txt</code> that contains the email address you
+	used to enrol online, whether or not it was a uwaterloo.ca address.</b>
+	</p>
+
+	<h3>Step 2: Framework and source code</h3>
+
+	<p>
+	By itself, OpenGL doesn't make it possible to write complete programs.
+	At the very least, it needs a way to talk to the computer's window
+	system.  And of course, there are numerous libraries, toolkits, 
+	and frameworks that we can layer on top of OpenGL to make coding
+	easier.  For this course we seek a middle ground: enough infrastructure
+	to help you get started, without hiding the technical details of
+	OpenGL programming.  We're using the following:
+	</p>
+
+	<ul>
+	<li>C++</li>
+	<li><a href="https://github.com/skaslev/gl3w">gl3w</a>, a low-level
+		system that provides access to the official OpenGL API.</li>
+	<li><a href="http://www.glfw.org/">GLFW</a>, a simple framework
+		that wraps an OpenGL context inside a window and manages
+		user events.</li>
+	<li><a href="http://glm.g-truc.net/0.9.7/index.html">GLM</a>,
+		a mathematical library for the parts of linear algebra needed
+		in computer graphics.  Conveniently, it mimics the types
+		and features of 
+		<a href="https://www.opengl.org/documentation/glsl/">GLSL</a>,
+		the shader programming language used with OpenGL.</li>
+	<li><a href="https://github.com/ocornut/imgui">ImGui</a>, a
+		user interface toolkit.</li>
+	<li>cs488-framework, a thin layer on top of the libraries listed
+		above.</li>
+	</ul>
+
+	<p>
+	To avoid potential problems with missing libraries or incorrect 
+	versions, you will download a package from us that contains the
+	source code for all these libraries, bundled in with skeleton
+	code for Assignments 0 and 1.
+	</p>
+	<p>
+	To begin, download the file <a href="https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/cs488-a0a1.zip">cs488-a0a1.zip</a>
+	and unzip it.  The bundled libraries are all in <code>shared/</code>.
+	You don't need to change anything in that directory.  The assignments
+	can be completed by writing code in the <code>A0/</code>,
+	<code>A1/</code>...  directories.
+	</p>
+	<p>Now build the bundled libraries.  They have different build processes,
+	but we've provided a quick way to get it all done at once:
+	</p>
+	<pre>  $ cd cs488
+  cs488$ premake4 gmake
+  cs488$ make</pre>
+	<p>(You'll need to have <code>premake4</code> and <code>cmake</code>
+	installed on your system.)</p>
+
+	<h3>Step 3: My First Triangle</h3>
+	
+	<p>
+	Now go into the <code>A0/</code> directory and build the skeleton
+	code:
+	</p>
+<pre>  $ cd A0
+  cs488$ premake4 gmake
+  cs488$ make</pre>
+
+   <p>You'll see a window with a single white triangle and a small 
+   	  palette in the corner with user interface controls.</p>
+
+	<center>
+		<img style="max-width : 75%" src="./CS 488_688_ Introduction to Computer Graphics_files/a0_initial.png">
+	</center>
+
+	<br>
+	<p>
+	Now make the following changes to the program, all in <code>A0.cpp</code>:
+	</p>
+
+	<ol>
+	<li>Initially, the Quit Application button is placed underneath
+		the Red Channel slider.  Move it so that it's the first control
+		in the Shape Properties palette.  Also, add a keyboard shortcut:
+		the <b>Q</b> key should quit the program.
+	</li>
+	<li>Add two new sliders to Shape Properties: a Green Channel and a 
+		Blue Channel.  Taken together, the three sliders should
+		give you complete control over the RGB colour of the triangle.
+	</li>
+	<li>Add a slider to control the rotation angle of the triangle
+		(there's already a rotation member variable in the <code>A0</code> 
+		class that you can set).  The slider should allow you to rotate the
+		triangle through exactly one complete circle.
+	</li>
+	<li>Add keyboard shortcuts to scale the triangle (again, use the
+		defined member variable).  Use the <b>-</b> 
+		(minus) key to scale down by a constant factor, and the <b>+</b>
+		(plus) key to scale up by the same factor.  Choose your factor
+		so that the triangle scales at a reasonable rate.
+	</li>
+	<li>Between the Quit button and the sliders, add a Reset button
+		that sets the triangle back into its original state (colour,
+		scale, rotation, position).  Add a keyboard shortcut, so that
+		the <b>R</b> key resets.
+	</li>
+	<li>Take a screenshot of your finished program and store it as
+		<code>A0/screenshot.png</code>.
+	</li>
+	</ol>
+
+	<h3>Step 4: README</h3>
+
+	<p>
+	For programming assignments, you will be required to create a
+	text file called <code>README</code>.  Place your <code>README</code>
+	file in the <code>A0/</code> directory.  The <code>README</code> 
+	file should contain two sections:
+	</p>
+
+	<ul>
+	<li><b>Compilation:</b> Give short instructions on how to compile 
+		and run the program.  Indicate if there are any changes relative
+		to the default premake4/make combination.  Mention any additional
+		assumptions (for example, if the program must be run from a particular
+		directory).  Also tell us on which lab computer you completed the
+		assignment (if we can't get your program running, we'll try it
+		on the computer you used as a failsafe).
+	</li>
+	<li><p><b>Manual:</b> The manual is not a restatement of the assignment
+		specification: we know what the program is supposed to do.  The
+		manual should include any details or assumptions that you have
+		made that were not included in the specification. Tell us about
+		any extra commands, options or features you added, or any additional
+		data files that you may have generated. If you have made any
+		assumptions about the assignment specification or the objectives, 
+		be sure you state and justify them here.</p>
+		<p>
+		You should also note in your manual any
+		objectives that you did not complete. If you wrote
+		code for objectives that you did not get completed,
+		you may request <b>code credit</b> in your manual.
+		See Section 3.9 of the <a href="https://www.student.cs.uwaterloo.ca/~cs488/cn.pdf">course outline</a>
+		for information about code credit.
+		</p>
+	</li></ul>
+
+	<h3>Step 5: Submitting your program</h3>
+	
+	<p>
+	In most assignments, you'll need to upload a directory of code.  Create 
+	a ZIP file containing the <code>A0/</code> directory and all its
+	contents.  Upload it to LEARN.  If you want to be helpful, do a
+	<code>make clean</code> in <code>A0/</code> before zipping it up,
+	to avoid including unneeded build files.
+	</p>
+	<p>
+	You are not required to work on the lab machines to complete assignments,
+	but <em>your code must compile and run cleanly on the lab machines</em>.
+	It is your responsibility to ensure that this is the case!  Please
+	try your code at least once on a lab machine before submitting it.
+	You will lose marks if we cannot compile and run it right out of the
+	box.
+	</p>
+
+	<h3>Step 5: Objective list</h3>
+
+	<p>
+	Every assignment includes a list of objectives.  Your mark in the
+	assignment will be based primarily on the achievement of these objectives,
+	with possible deductions outside the list if necessary.
+	</p>
+
+	<div class="panel panel-default">
+	  <div class="panel-heading">
+		<h3 class="panel-title">Assignment 0 objectives</h3>
+	  </div>
+	  <ul class="list-group">
+	  	<li class="list-group-item">
+			▢ Student has registered on the Piazza site for the course
+				and submitted the file <code>piazza.txt</code>.
+		</li>
+	  	<li class="list-group-item">
+			▢ The file <code>A0.zip</code> has been submitted and
+			contains the correct files.
+		</li>
+	  	<li class="list-group-item">
+			▢ Submitted code directory includes an appropriate 
+			<code>README</code>.
+		</li>
+	  	<li class="list-group-item">
+			▢ The Quit button has been moved to the top of the
+			Shape Properties panel.
+		</li>
+	  	<li class="list-group-item">
+			▢ The <b>Q</b> keyboard shortcut quits the program.
+		</li>
+	  	<li class="list-group-item">
+			▢ The user interface includes sliders to
+			control the Green and Blue components of the triangle's colour.
+		</li>
+	  	<li class="list-group-item">
+			▢ The user interface includes a slider to
+			control the triangle's rotation.
+		</li>
+	  	<li class="list-group-item">
+			▢ The user interface includes keyboard shortcuts to
+			scale the triangle up and down at a reasonable rate.
+		</li>
+	  	<li class="list-group-item">
+			▢ The user interface includes a Reset button and
+			a corresponding keyboard shortcut.
+		</li>
+	  	<li class="list-group-item">
+			▢ The code directory includes an appropriate 
+			screenshot in <code>screenshot.png</code>.
+		</li>
+	  </ul>
+	</div>
+
+	</div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="./CS 488_688_ Introduction to Computer Graphics_files/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="./CS 488_688_ Introduction to Computer Graphics_files/bootstrap.min.js"></script>
+  
+
+</body></html>

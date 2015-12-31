@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<!-- saved from url=(0059)https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/a2.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>CS 488/688: Introduction to Computer Graphics</title>
+
+    <!-- Bootstrap -->
+    <link href="./a2_files/bootstrap.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+	 <!-- Custom styles for this template -->
+    <link href="./a2_files/carousel.css" rel="stylesheet">
+
+	<style>
+		/* Customize container */
+		@media (min-width: 768px) {
+			.container {
+				max-width: 730px;
+			}
+		}
+		.container-narrow > hr {
+			margin: 30px 0px;
+		}
+
+		dd {
+			padding-bottom: 10px;
+			padding-left: 10px;
+		}
+
+		dl {
+			padding-bottom: 0px;
+		}
+	</style>
+  <style type="text/css"></style></head>
+  <body role="document">
+	<div class="container" role="main">
+	<center>
+    <h2>CS 488/688: Introduction to Computer Graphics</h2>
+	<h4>Fall 2015 Assignment 2: Pipeline</h4>
+	<hr>
+	</center>
+
+	<div class="alert alert-warning" role="alert">
+		<b>Due: Tuesday, October 13th, 11:59pm</b>
+	</div>
+
+	<h3>Summary</h3>
+
+	<p>
+	Your goal of this assignment is to write a program to draw a wireframe
+	cube.  You can apply modelling transformations to the cube, and viewing
+	transformations to the camera.  That might sound easy, especially 
+	in light of all the cubes in Assignment 1, but there's a catch: 
+	all you're allowed to do is draw lines directly in normalized 
+	device coordinates.
+	You will be responsible for implementing the geometric pipeline, 
+	including perspective projection and clipping.  This assignment provides
+	a good way to see all the parts of the pipeline in a single place.
+	</p>
+	<p>
+	You should construct your cube using the eight vertices 
+	(±1, ±1, ±1).  You must also draw two coordinate
+	frames (sometimes called <em>gnomons</em> in this context).  The first
+	will represent the cube's local <b>modelling coordinates</b>; its
+	origin is the cube's centre, and it will
+	be subjected to every modelling, viewing and projection transformation
+	applied to the cube, <em>except</em> for scaling.  The second will 
+	represent <b>world coordinates</b>.  These will be the same size as the
+	modelling axes, but they will remain fixed at (0,0,0)—they 
+	will be subjected only to the viewing and projection transformations.
+	Draw each gnomon so that its <em>x</em>, <em>y</em>, and <em>z</em>
+	axes are visually distinct; the most obvious means of doing so is
+	to draw them with different colours.
+	(Though these coordinate frames are conceptually of unit length,
+	you'll probably want to scale them when drawing them in order to ensure
+	they're visible on screen.)
+	</p>
+	<p>
+	You will apply modelling transformations to the box
+	(rotations, translations, and scales) and viewing transformations
+	to the eyepoint (rotations and translations). The user interface will
+	allow you to select which class of transformation to apply.
+	In each mode, dragging with a combination of mouse buttons pressed
+	will use the <em>x</em> position of the mouse to control the axes
+	on which a transformation will act.
+	</p>
+	<p>
+	You will need to maintain four distinct coordinate systems
+	in this assignment. Three of these coordinate systems are
+	3D and one is 2D: the box ("model") coordinates (3D), the
+	eyepoint ("view") coordinates (3D), the universal ("world")
+	coordinates (3D), and the display ("screen") 2D normalized
+	device coordinates (which arise from the perspective
+	projection of the eye's view onto the eye's <em>xy</em> plane).
+	</p>
+	<p>
+	The modelling transformations apply with respect to 
+	model coordinates (i.e., a model mode rotation about the
+	<em>x</em> axis will rotate the box about its current <em>x</em> axis,
+	not the world's <em>x</em> axis).  The viewing transformations apply
+	with respect to view coordinates (i.e., a view mode
+	rotation about the <em>x</em> axis will appear to swing the objects
+	in view up or down on the screen, since the eye's <em>x</em> axis
+	appears parallel to the screen's horizontal axis). None of
+	the modelling transformations will change world coordinates
+	(i.e., the world gnomon never changes its location, though,
+	of course, it may drift out of our view as a result of
+	viewing transformations).
+	</p>
+	<p>
+	You are to form all matrices yourself and accumulate all
+	matrix products in software. You will also do the perspective
+	projection yourself, including the division to convert from
+	3D homogeneous coordinates to 2D Cartesian coordinates.
+	This means that you will have to do a 3D near-plane line/plane
+	clip in the viewing coordinate system to avoid dividing by
+	zero or having line segments "wrap around".
+	</p>
+
+	<h3>The interface</h3>
+
+	<p>
+	Your GUI panel must contain at least the following widgets:
+	</p>
+
+	<ul>
+	<li>A <b>Reset</b> button (keyboard shortcut <b>A</b>), which 
+	restores the original state of all transforms and perspective 
+	parameters, and sets the viewport to its initial state.</li>
+
+	<li>A <b>Quit</b> button (keyboard shortcut <b>Q</b>), which
+	terminates the program.</li>
+
+	<li>A set of radio buttons that control the current interaction modes.
+	The interaction modes are listed in detail below.</li>
+
+	<li>A status line indicating (at least) the locations of the near
+	and far planes (i.e., their distances from the camera).</li>
+	</ul>
+
+	<p>
+	The main means of interaction with the environment is by
+	dragging the mouse with one or more buttons held down.  When
+	a mouse button is pressed, relative horizontal motion of the cursor
+	is tracked and the transformations are continuously updated
+	until a button up event is received.  If multiple mouse
+	buttons are held down simultaneously, all relevant parameters
+	should be updated in parallel. This can be a bit tricky when rotating
+	with multiple mouse buttons simultaneously, since rotations around
+	the different axes don't commute.  In this case, 
+	you may apply the rotations in a fixed order of your choosing.
+	In general, you will want to be able to compose an <em>arbitrary</em>
+	sequence of transformations.
+	</p>
+
+	<p>Here are the interaction modes you must support:</p>
+
+	<ul>
+	<li><b>Rotate View</b> (keyboard shortcut <b>O</b>): 
+	<ul><li>Dragging with the left mouse button rotates the view
+		vector about the eye's <em>x</em> (horizontal) axis.</li>
+		<li>Dragging with the middle mouse button rotates the view
+		about the eye's <em>y</em> (vertical) axis.</li>
+		<li>Dragging with the right mouse button rotates the view
+		about the eye's <em>z</em> axis.</li>
+		</ul>
+	</li>
+
+	<li><b>Translate View</b> (keyboard shortcut <b>N</b>): 
+	<ul><li>Dragging with the left mouse button translates the eye 
+		position along the eye's <em>x</em> (horizontal) axis.</li>
+		<li>Dragging with the middle mouse button translates the eye 
+		position along the eye's <em>y</em> axis.</li>
+		<li>Dragging with the right mouse button translates the eye 
+		position along the eye's <em>z</em> axis.</li>
+		</ul>
+	</li>
+
+	<li><b>Perspective</b> (keyboard shortcut <b>P</b>): 
+	<ul><li>Dragging with the left mouse button changes the field
+		of view (FOV) of the projection over a range from 5 to 160 degrees.
+		</li>
+		<li>Dragging with the middle mouse button translates projection's
+			near plane along the view direction.</li>
+		<li>Dragging with the right mouse button translates projection's
+			far plane along the view direction.</li>
+		</ul>
+		(A good default value for FOV is 30 degrees.)
+	</li>
+
+	<li><b>Rotate Model</b> (keyboard shortcut <b>R</b>): 
+	<ul><li>Dragging with the left mouse button rotates the cube
+		about its local <em>x</em> axis.</li>
+		<li>Dragging with the middle mouse button rotates the cube
+		about its local <em>y</em> axis.</li>
+		<li>Dragging with the right mouse button rotates the cube
+		about its local <em>z</em> axis.</li>
+		</ul>
+	</li>
+
+	<li><b>Translate Model</b> (keyboard shortcut <b>T</b>): 
+	<ul><li>Dragging with the left mouse button translates the cube
+		about its local <em>x</em> axis.</li>
+		<li>Dragging with the middle mouse button translates the cube
+		about its local <em>y</em> axis.</li>
+		<li>Dragging with the right mouse button translates the cube
+		about its local <em>z</em> axis.</li>
+		</ul>
+	</li>
+
+	<li><b>Scale Model</b> (keyboard shortcut <b>S</b>): 
+	<ul><li>Dragging with the left mouse button scales the cube
+		in its local <em>x</em> direction.</li>
+		<li>Dragging with the middle mouse button scales the cube
+		in its local <em>y</em> direction.</li>
+		<li>Dragging with the right mouse button scales the cube
+		in its local <em>z</em> direction.</li>
+		</ul>
+		(Note that scaling the cube non-uniformly might mean that
+		it no longer looks like a cube when drawn, but like a more
+		general box.)
+	</li>
+
+	<li><b>Viewport</b> (keyboard shortcut <b>V</b>): use the mouse	
+		to draw an axis-aligned rectangle on screen, which defines
+		the viewport in normalized device coordinates into which the scene
+		will be drawn. More information about Viewport mode below.
+	</li>
+	</ul>
+
+	<p>
+	The initial interaction mode should be "Rotate Model", and this mode
+	should be restored on a reset.  The amount of translation, rotation,
+	or scaling will be determined from the relative change in the cursor's
+	<em>x</em> value referenced to the value read at the time the mouse 
+	button was last moved.  Make sure your program doesn’t get confused if 
+	more than one button is pressed at the same time; all the motion events
+	should be processed simultaneously, as specified above, although
+	individual “incremental” transformations can be composed in a fixed order
+	(for example, when rotating around multiple axes simultaneously, you can
+	decide on a fixed order in which the axis rotations will be applied).
+	</p>
+	<p>
+	You should use appropriate scaling factors to map the relative mouse
+	motion to reasonable changes in the model and viewing transformations.
+	For example, you might map the width of the application window to a
+	rotation of
+	180 or 360 degrees.  On the other hand, do not limit the total 
+	accumulation of rotations and translations; i.e., there should be no
+	restriction on the cumulative amount of rotation or translation applied 
+	to an object, or to the number of sequential transformations.
+	</p>
+
+	<h3>Viewport mode</h3>
+
+<p>
+Viewport mode allows the user to change the viewport. Assume
+that you have a square window into the world, and that this window
+is mapped to the (possibly non-square) viewport.  The window-to-viewport
+mapping should be as described in the lecture notes and the course
+text: if the aspect ratio of the viewport doesn’t match the aspect
+ratio of the window (i.e., the viewport is not square), then the
+objects appearing in the viewport will be stretched. Further, when
+you change the viewport, you will see the same objects in the new
+viewport (possibly scaled and stretched) that you saw in the old
+viewport.
+</p>
+<p>
+You must draw the outline of the viewport so that we can tell
+where it is.
+</p>
+<p>
+In Viewport mode, the left mouse button is used to draw a new
+viewport. Pressing the left mouse button sets one corner.  
+While the mouse is moving with the button held down, you should 
+dynamically update the viewport, and when the button is released,
+that viewport should remain in effect.  You should
+be able to draw a viewport by specifying the corners in any order.
+If the mouse position is outside the window when dragging or releasing
+the button, clamp the edges of
+the viewport to the visible part of the window.
+</p>
+<p>
+The initial viewport should fill 90% of the full window size, with
+a 5% margin around the top, bottom, left and right edges. This is
+important so that we can verify that your viewport clipping works
+correctly—if you do not do this, you may lose marks in two places.
+The user should be able to set the viewport to any portion of the
+application window, including sizes larger than the original size. Note
+also that the viewport is to be reset to the initial size when the reset
+option is selected from the file menu
+</p>
+
+<h3>Projection</h3>
+
+<p>
+You must implement a perspective projection. This will
+make the cube look three dimensional, with perspective foreshortening
+distinguishing front and back. You may use a projective transformation
+matrix, if you wish.  However, note that for this assignment there
+is no need to transform the <em>z</em>-coordinate. Thus you could use 
+the mappings <em>x→x/z</em> and <em>y→y/z</em> directly,
+although note that some additional scaling will be
+necessary to account for the field of view.  If you do wish to 
+construct a perspective projection matrix, you must do so
+<em>manually</em>—you may not simply use a library function that
+creates perspective matrices.  (That is, you may use a type like 
+<code>mat4</code> to hold the perspective matrix, but you must construct
+the matrix with explicit values.)
+</p>
+<p>
+If you cannot get perspective projection working,
+you may implement an orthographic view (no perspective) instead.
+You will not get a mark for Objective 7, but you may still complete most
+of the other objectives in the assignment. It may actually be useful
+to implement an orthographic view first in order to get model and
+view transformations working, and return to add perspective projection last.
+</p>
+
+<h3>Clipping</h3>
+
+<p>
+You will need to clip your lines to the viewing volume. There are
+several ways to clip, any of which will suffice for this assignment.
+Note, however, that you <em>must</em> clip to the near plane before 
+performing perspective projection, or you will get odd behaviour and
+crashes. You may find it easiest to clip to the remaining sides
+of the viewing volume after projection (since you
+will be clipping to a cube), but you may clip at any point in your
+program. Note that we will be testing clipping against all sides
+of the view volume.
+</p>
+
+<h3>Donated code</h3>
+
+<p>
+You should download the <a href="https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/cs488-a2.zip">A2 skeleton code</a>
+and unzip it directly into your <code>cs488</code> directory along
+with A0 and A1. You will make changes to <code>A2.hpp</code> and
+<code>A2.cpp</code>.  This assignment is somewhat unusual, because
+you will not use any OpenGL API calls directly; instead, you must
+rely on the provided methods for drawing coloured lines.  With that
+in mind, you should focus on the following additions/changes to the
+code:
+</p>
+<ul>
+<li>In <code>A2.hpp</code>, add whatever member fields you want to 
+	track the current state of the modelling, viewing and projection
+	transformations, as well as the viewport.</li>
+<li>In <code>A2::appLogic()</code>, remove the sample code that
+	draws a few simple lines, and replace it with your code for
+	drawing the cube, gnomons, and viewport. Use the provided
+	methods <code>initLineData()</code>, <code>drawLine()</code>,
+	and <code>setLineColour()</code>.</li>
+<li>In <code>A2::guiLogic()</code>, add code to draw the UI widgets
+	listed above.</li>
+<li>Add interaction callbacks to track the mouse and perform transformations
+	appropriate for the current interaction mode.</li>
+</ul>
+
+<p>
+Again, the code you add should <em>contain no OpenGL calls</em>—all
+drawing is hidden behind <code>drawLine()</code>.  In addition, while
+you are permitted to use most of the vector and matrix manipulation
+code in the GLM library, please <em>do not</em> use the function
+<code>glm::perspective()</code>.  If you use a matrix to implement
+perspective projection, <em>you must construct that matrix explicitly 
+yourself</em> (you can still use a <code>mat4</code> to hold it, though).
+If you're unsure about what functions you are or are not allowed to use,
+or where you can add code, please ask on Piazza.
+</p>
+
+<h3>Deliverables</h3>
+
+<p>
+As always, prepare a ZIP file of the <code>A2/</code> directory, omitting
+unnecessary files (executables, build files, etc.). Upload the ZIP file to 
+LEARN.  In that directory, include a <code>README</code> file and a screenshot.
+If you omit either file, you will receive a deduction. 
+</p>
+
+<h3>Objective list</h3>
+
+	<p>
+	Every assignment includes a list of objectives.  Your mark in the
+	assignment will be based primarily on the achievement of these objectives,
+	with possible deductions outside the list if necessary.
+	</p>
+
+	<div class="panel panel-default">
+	  <div class="panel-heading">
+		<h3 class="panel-title">Assignment 2 objectives</h3>
+	  </div>
+	  <ul class="list-group">
+	  	<li class="list-group-item">
+			▢ All model transformations are carried out with respect
+			to the cube's local origin. (This means, for example, that an
+			<em>x</em> translation will not necessarily be parallel to the
+			world's <em>x</em> axis, if the box has been rotated about its
+			<em>y</em> or <em>z</em> axis.)
+		</li>
+	  	<li class="list-group-item">
+			▢ Viewing transformations work as expected according to
+			the eye's location. This is indicated by the displayed location
+			of the world gnomon.
+		</li>
+	  	<li class="list-group-item">
+			▢ Model transformations are applied to the cube's gnomon,
+			except that the gnomon is carried along <em>unscaled</em>.
+		</li>
+	  	<li class="list-group-item">
+			▢ The transformations in all modes act smoothly while the
+			mouse is being moved. Pressing two buttons at the same time
+			results in transformations in multiple axes being performed
+			together.
+		</li>
+	  	<li class="list-group-item">
+			▢ Rotations, translations, and scales can be invoked in
+			any order. Interaction modes may be entered and left as often
+			as desired. There are no restrictions that prevent model 
+			transformations from being applied after the view has changed, 
+			or view transformations after the cube has been transformed. No
+			matter what sequence of transformations is entered, the box never
+			distorts so that its edges fail to meet at right angles (in 3D).
+		</li>
+	  	<li class="list-group-item">
+			▢ The user interface works as described, with (at least)
+			two buttons, the radio buttons to select interaction modes, and
+			a status line indicating the numerical values of the near and
+			far planes.
+		</li>
+	  	<li class="list-group-item">
+			▢ The perspective transformation has been correctly 
+			implemented, and the field of view can be changed
+			as specified in the assignment description.
+		</li>
+	  	<li class="list-group-item">
+			▢ The viewport user interface and the viewport mapping 
+			works as specified in the assignment description.
+			The initial viewport is centered and occupies 90% of the 
+			application window.
+		</li>
+	  	<li class="list-group-item">
+			▢ Lines are clipped to the near and far planes. The 
+			near and far planes can be changed as specified in
+			the assignment description.
+		</li>
+	  	<li class="list-group-item">
+			▢ Lines are clipped to the sides of the viewing volume.
+		</li>
+	  </ul>
+	</div>
+
+	</div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="./a2_files/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="./a2_files/bootstrap.min.js"></script>
+  
+
+</body></html>

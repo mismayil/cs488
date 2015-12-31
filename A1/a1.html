@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<!-- saved from url=(0059)https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/a1.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>CS 488/688: Introduction to Computer Graphics</title>
+
+    <!-- Bootstrap -->
+    <link href="./a1_files/bootstrap.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+	 <!-- Custom styles for this template -->
+    <link href="./a1_files/carousel.css" rel="stylesheet">
+
+	<style>
+		/* Customize container */
+		@media (min-width: 768px) {
+			.container {
+				max-width: 730px;
+			}
+		}
+		.container-narrow > hr {
+			margin: 30px 0px;
+		}
+
+		dd {
+			padding-bottom: 10px;
+			padding-left: 10px;
+		}
+
+		dl {
+			padding-bottom: 0px;
+		}
+	</style>
+  <style type="text/css"></style></head>
+  <body role="document">
+	<div class="container" role="main">
+	<center>
+    <h2>CS 488/688: Introduction to Computer Graphics</h2>
+	<h4>Fall 2015 Assignment 1: OpenGL</h4>
+	<hr>
+	</center>
+
+	<div class="alert alert-warning" role="alert">
+		<b>Due: Monday, September 28th, 11:59pm</b>
+	</div>
+
+	<h3>Summary</h3>
+
+	<p>
+	In this assignment you will learn the basics of programming real-time
+	3D graphics using OpenGL. You will create geometric primitives, draw
+	them to the screen, and modify the contents of the 3D environment
+	in response to user interaction.
+	</p>
+	<p>
+	In particular, you will develop a 3D sandbox environment for 
+	constructing coloured, low-resolution blocky landscapes from cubes.
+	The program is inspired by the 3D sandbox game 
+	<a href="https://en.wikipedia.org/wiki/Minecraft">Minecraft</a>,
+	though it's a pretty improverished version of that game, since you
+	can only build upward in columns.  (Also, there is no texturing,
+	no shading, no redstone, no creepers, no cats, etc.)  Let's call
+	it Barcraft.
+	</p>
+
+	<h3>The Barcraft environment</h3>
+
+	<p>
+	The most obvious feature of the Barcraft environment is the grid,
+	which lies on the ground (i.e., the plane <var>y</var> = 0) and
+	defines the legal squares upon which individual bars may be 
+	grown.  Each grid cell is a unit square, and the grid itself is
+	an <var>N</var>×<var>N</var> arrangement of legal cells
+	for some constant <var>N</var>.
+	In the environment, we actually draw a grid of size 
+	(<var>N</var>+2)×(<var>N</var>+2), surrounding the main
+	grid with an extra ring of cells as a visual reference.  This
+	extra ring is purely for decoration—no bars can be grown on 
+	it.
+	</p>
+	<p>
+	Every live (non-ring) grid cell supports a <em>bar</em>.  The bar is a
+	stack of unit cubes, all of the same colour.  The point of the Barcraft
+	environment is to navigate around on the grid, growing and shrinking
+	the bars and assigning colours to them, in order to produce a simple
+	landscape, sculpture, or heightfield.
+	</p>
+	<p>
+	At any time, one cell in the grid is "active".  Commands to grow
+	or shrink bars should affect that cell.  The active cell is clearly
+	indicated in the user interface in some way, for example, by highlighting
+	the cell or the top of the bar that lives on it.  Whatever form of
+	indication is used, it should be drawn <em>on top</em> of the rest
+	of the Barcraft environment; otherwise it may be hidden by tall bars
+	in other cells that cover up the active cell.  (It may also be possible
+	to include useful indicators in the outer ring of cells.)
+	</p><p>
+	For the most part, we will
+	use the keyboard to control the modelling environment, as explained
+	below.  In addition, we can manipulate the view in a 
+	few simple ways via the mouse: we can rotate the grid around its
+	centre to look at the design from all angles, and scale it up or
+	down.
+	</p>
+
+	<h3>User interaction</h3>
+
+	<p>
+	Your implementation of Barcraft should support (at least) the following
+	commands and interactions:
+	</p>
+	<ul>
+	<li><b>Quit Application:</b> There should be a Quit Application button
+		in the control panel that terminates.  It should also be possible
+		to perform this action using the <b>Q</b> key.</li>
+	<li><b>Reset:</b> There should be a Reset button that restores the
+		grid to its initial, empty state, resets the view to the default,
+		and moves the active cell back to (0,0).  (Hotkey: <b>R</b>)</li>
+	<li><b>Colours:</b> There should be at least eight colours that can 
+		be applied to bars.  The colours should be defined via a sequence
+		of colour pickers in the control panel, each paired with a radio
+		button.  Clicking the radio button sets the active colour, so that
+		any new bars (i.e., those grown on initially empty cells) are
+		given that colour.  If there is already a bar in the active cell,
+		the selected colour is also applied immediately to that bar.
+		Editing the colour itself (e.g., changing the R, G and B sliders) 
+		should immediately affect <em>all</em> bars of that colour in the 
+		grid.</li>
+	<li><b>Rotation:</b> Dragging the mouse to the left or the right 
+		should rotate the grid smoothly around its centre (as if it were 
+		sitting
+		on a turntable).  This feature lets the user examine the grid from
+		all angles.  Moving the mouse should produce a "reasonable"
+		amount of rotation, proportional to the distance travelled by
+		the mouse in the <var>x</var> direction.</li>
+	<li><b>Scaling:</b> The mouse's scroll wheel (or the scroll gesture
+		on a trackpad) should control the scaling of the grid.  Scrolling
+		down should make the grid smaller, scrolling up should make it
+		bigger.  The amount of scaling should be constrained by reasonably
+		chosen maximum and minimum amounts.</li>
+	<li><b>Growing bars:</b> The <b>space</b> key should grow the bar in the
+		active cell by one unit.  The <b>backspace</b> key should shrink it
+		by one unit.  It should not be possible to shrink a bar below
+		the ground plane.  The environment may impose an upper limit
+		on bar height, but this limit is not required.</li>
+	<li><b>Arrow keys:</b> The arrow keys move the active cell around
+		on the grid. Use the <b>left</b> and <b>right</b>
+		arrows to modify the <var>x</var>
+		location of the active cell, and the 
+		<b>up</b> and <b>down</b> arrows to modify
+		<var>y</var>.  Holding down the <b>shift</b> key with the arrows adds
+		extra functionality: when the active cell moves, it <em>copies</em>
+		the height and colour of the bar from its previous location.
+		Thus, by holding the <b>shift</b> key and walking around with the 
+		arrows,
+		it's easy to build a wall of a given height and colour.</li>
+	</ul>
+
+	<h3>Skeleton code</h3>
+
+	<p>
+	If you haven't already, follow the instructions in 
+	<a href="https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/a0.html">Assignment 0</a> for downloading the framework and
+	skeleton code.  You'll find the skeleton code for this
+	assignment in the <code>A1/</code> directory.  It should compile
+	and run out of the box using the same premake4/make commands used
+	for Assignment 0.  You'll see the the skeleton program sets up
+	the control panel, including a Quit button and single example of
+	a colour slider and radio button.  It also draws a ground grid
+	for you.  Notice that the grid is of size 18×18.  The live
+	area of the grid is 16×16, as defined by the constant 
+	<code>DIM</code> in <code>A1.cpp</code>; the program automatically
+	adds the extra ring of cells around the live core.  The program
+	defines reasonable initial values for the projection, view and
+	model matrices, and passes them into the vertex shader for you.
+	</p>
+	<p>
+	Here is a suggested sequence of steps to get you started with this
+	assignment. (But feel free to work on the assignment in any order
+	you want!)
+	</p>
+	<ol>
+	<li>First and foremost, get a cube on the screen.  This is probably
+ 		the hardest part of the assignment!  Define the geometry of a 
+		unit cube, and get it into OpenGL by creating appropriate
+		attribute arrays and vertex buffers.  You <em>must</em> use
+		modern OpenGL commands here and throughout the assignment.
+		That is, eventually you'll draw cubes using a function like
+		<code>glDrawArrays()</code> or <code>glDrawElements()</code>,
+		and you should never call functions like <code>glVertex()</code>.
+		</li>
+	<li>See if you can draw a stack of cubes instead of just one.</li>
+	<li>If you can do that, hook up the <b>space</b> and <b>backspace</b>
+		keys to grow and shrink that stack.</li>
+	<li>Now define an active cell, and figure out a reasonable way to 
+		indicate it in the user interface.  As mentioned above, the
+		indicator should always be drawn on top of all other 3D geometry.  
+		That's easily done by temporarily disabling depth testing.  Once
+		the indicator is drawn, add the code to move it around using the
+		arrow keys.  Then make sure that <b>space</b> and <b>backspace</b>
+		are applied to the active cell.</li>
+	<li>Next, add in the functionality for copying by holding down 
+		<b>shift</b> with the arrow keys.</li>
+	<li>Turn the single colour selector into at least eight colours.
+		Write the code to hook up clicks on radio buttons with changing
+		the colour of the bar in the active cell and setting the colour
+		for any new bars.  Make sure that editing the colours modifies
+		all bars of that colour in the world.</li>
+	<li>Add in mouse rotation.  This is most easily accomplished by 
+		modifying the model-to-world transformation while holding the
+		camera fixed.  As is typical in interactive programs, it'll
+		help to keep track of the <em>previous</em> <var>x</var>
+		position of the mouse, so that you can rotate by an amount
+		proportional to the <em>difference</em> in <var>x</var>
+		every time you receive a mouse event.  (Note that after rotating,
+		the arrow keys might become quite unintuitive, since the grid
+		is rotated relative to the directions of the keys.  You don't
+		have to worry about that for this assignment.)
+		</li>
+	<li>Add scaling by responding to scroll events.  There are probably
+		several ways to do this.  One would be to scale the world itself
+		by manipulating the model-to-world transformation.  Another is
+		to move the camera closer to or farther from the centre of the
+		grid.  Either technique is fine, as long as the scaling is
+		bounded within reasonable limits.</li>
+	<li>Finally, add in the Reset button and its hotkey, setting all the 
+		values manipulated above back to the defaults.</li>
+		
+	</ol>
+
+	<h3>Deliverables</h3>
+	
+	<p>
+	The submission process for this assignment is basically the same
+	as the one for Assignment 0.  Prepare a ZIP file of the <code>A1/</code>
+	directory, omitting unnecessary files (executables, build files, etc.).
+	Upload the ZIP file to LEARN.
+	</p>
+	<p>As with Assignment 0, you <em>must</em> submit two other files 
+	in your <code>A1/</code> directory: the <code>README</code> and
+	a screenshot.  If you omit either file, you will receive a deduction.
+	See <a href="https://www.student.cs.uwaterloo.ca/~cs488/Fall2015/a0.html">Assignment 0</a> for instructions about how
+	to prepare these two files.
+	</p>
+
+	<h3>Other thoughts</h3>
+
+	<p>
+	As OpenGL has evolved, the API has actually gotten a bit more streamlined.
+	The part of OpenGL you talk to from inside a C++ application tends to
+	focus on telling the GPU about the pieces of data that power your
+	program, and maybe setting a couple of system-wide parameters; most
+	of the actual "graphics" has been pushed into the shaders.
+	</p>
+	<p>
+	If it helps, here is the complete set of OpenGL API calls we used in
+	the model solution.  <em>This is for information only:</em> you should
+	feel free to use a subset of these functions, and to include others
+	not on the list.  But you should <em>not</em> use deprecated OpenGL
+	calls from the compatibility profile: no <code>glBegin()</code>, 
+	<code>glVertex()</code>, or <code>glEnd()</code>!
+	</p>
+	<ul>
+	<li><code>glBindBuffer()</code></li>
+	<li><code>glBindVertexArray()</code></li>
+	<li><code>glBufferData()</code></li>
+	<li><code>glClearColor()</code></li>
+	<li><code>glDisable()</code></li>
+	<li><code>glDrawArrays()</code></li>
+	<li><code>glDrawElements()</code></li>
+	<li><code>glEnable()</code></li>
+	<li><code>glEnableVertexAttribArray()</code></li>
+	<li><code>glGenBuffers()</code></li>
+	<li><code>glGenVertexArrays()</code></li>
+	<li><code>glUniform3f()</code></li>
+	<li><code>glUniformMatrix4fv()</code></li>
+	<li><code>glVertexAttribPointer()</code></li>
+	</ul>
+
+	<h4>Ideas for extensions</h4>
+
+	<p>
+	The core Barcraft environment is a great starting point for expansion
+	in new directions. We'd be excited to see what additional features
+	you can pack on top of the base interface, if you've got the time.
+	We <em>may</em> award a bonus point or two for especially ambitious
+	extensions.  Here are some random ideas for extensions:
+	</p>
+	
+	<ul>
+	<li>
+		The look of Barcraft is pretty bare-bones.  In fact, given
+		that bars are flat, solid colours, the 3D geometry of the
+		world can be pretty hard to understand.  Try to add some
+		kind of simple shading model to your cubes, possibly including
+		lights.  The simplest model is Lambertian shading based on
+		an implied directional light source (though you'll discover
+		that flat shaded meshes are surprisingly annoying to set up
+		in modern OpenGL).  If you want to get really fancy, look
+		around for Screen-Space Ambient Occlusion algorithms.
+	</li>
+	<li>
+		An obvious way to get closer to the look of Minecraft is
+		to apply textures to your cubes.
+	</li>
+	<li>
+		You could consider extending the geometry beyond bars.  The
+		ideal would be a fully 3D grid of voxels that can be controlled
+		independently, but it can be hard to design an interface for
+		turning individual voxels off and on.
+	</li>
+	<li>
+		Of course, Minecraft's world is much larger than 16×16.
+		You could try working with a much larger grid, but beyond a
+		certain limit you'll undoubtedly need two things: a "sparse"
+		data structure that represents the world without storing data
+		for every single cell, and a "culling" algorithm that preprocesses
+		the grid and only draws the cells that are actually in view.
+	</li>
+	<li>
+		Implement a way to load and save the contents of the grid, 
+		and maybe to load a grid from some kind of image.
+	</li>
+	<li>
+		Add a WASD/mouselook interface so that you can walk (or fly)
+		into the maze and look around as if it were a city grid.
+		For extra fanciness, implement rudimentary collision detection
+		so that you can't walk through cubes.
+	</li>
+	<li>
+		Turn the Bars into a platformer game in which a character
+		can walk around on the tops of cubes and jump.
+	</li>
+	<li>
+		Add new geometric primitives beyond cubes.  (Creepers? Sheep?)
+	</li>
+	<li>
+		Modify the key event handlers so that they simulate key repeat,
+		making it easier to apply a bunch of growth or movement
+		events all at once.
+	</li>
+	</ul>
+
+	<p>
+	If you do extend the base interface, be sure to document your 
+	extensions in your <code>README</code> file.  Keep in mind that
+	you must still satisfy the core objectives listed here.  If
+	your changes are so radical that your modified program is 
+	incompatible with Barcraft, you must include a "compatibility
+	mode" that makes the interface behave like the requirements
+	here.  (Or consider creating an entirely separate executable.)
+	</p>
+
+	<h3>Step 5: Objective list</h3>
+
+	<p>
+	Every assignment includes a list of objectives.  Your mark in the
+	assignment will be based primarily on the achievement of these objectives,
+	with possible deductions outside the list if necessary.
+	</p>
+
+	<div class="panel panel-default">
+	  <div class="panel-heading">
+		<h3 class="panel-title">Assignment 1 objectives</h3>
+	  </div>
+	  <ul class="list-group">
+	  	<li class="list-group-item">
+			▢ The user interface has the correct controls in a
+			reasonable layout.  The controls work appropriately.
+		</li>
+	  	<li class="list-group-item">
+			▢ The program is able to draw a 3D grid of cubes
+			of the correct sizes and locations.
+		</li>
+	  	<li class="list-group-item">
+			▢ Bars of cubes can be given at least one of
+			eight colours, as described above.
+		</li>
+	  	<li class="list-group-item">
+			▢ There is an active cell, which is clearly indicated
+			in the user interface.  The indicator is drawn on top of all
+			other scene geometry.
+		</li>
+	  	<li class="list-group-item">
+			▢ The <b>space</b> and <b>backspace</b> keys work
+			as described above.
+		</li>
+	  	<li class="list-group-item">
+			▢ When used without the <b>shift</b> key, the arrow
+			keys move the active cell around.
+		</li>
+	  	<li class="list-group-item">
+			▢ When used with the <b>shift</b> key, the arrow
+			keys move the active cell around while copying information
+			from the previously active location.
+		</li>
+	  	<li class="list-group-item">
+			▢ Rotation works as described above.
+		</li>
+	  	<li class="list-group-item">
+			▢ Scaling works as described above.
+		</li>
+	  	<li class="list-group-item">
+			▢ The reset button returns the user interface and
+			grid stat to the starting state.
+		</li>
+	  </ul>
+	</div>
+
+	</div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="./a1_files/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="./a1_files/bootstrap.min.js"></script>
+  
+
+</body></html>
